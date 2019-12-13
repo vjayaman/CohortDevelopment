@@ -64,6 +64,7 @@ homogeneityTables <- function(th, key.cl) {
     }
   }) %>% set_names(th$val) %>% return()
 }
+
 # Full dataset -------------------------------------------------------------------------------
 globalMetrics <- function(gene, h, id.gene.clusters, minC, cohort.lim, lhs, rhs, stepLhs, stepRhs) {
   # df of | id | locus (with binary data just for one cohort - the limiting one) | clusters for a single height
@@ -168,5 +169,25 @@ filterPerfect <- function(df, type, minC, perc) {
   }) %>% set_names(heights) %>% return()
 }
 
+readData <- function(datapath) {
+  read.table(datapath, header = TRUE, sep = "\t", 
+             check.names = FALSE, stringsAsFactors = FALSE) %>% return()
+}
 
-
+blurb <- function(a = NULL, type) {
+  if (type == "FacetedPlot") {
+    paste0("The selected variable to facet by, ", a[1], ", is indicated by the ", 
+           "black line in the facets \nof the plot below. The colorful lines represent ", a[2], 
+           " homogeneity. For example, in the \nfirst of the facets, the black line shows the ", 
+           "fraction of the data found in clusters where \n", a[3], a[4], "of the cluster ", 
+           "has the limiting factor. In the same facet, the lines in color show, \nrespectively, ", 
+           "the fraction of the data found in clusters where ", a[5], a[6], "\nof the cluster", 
+           " has the limiting factor.") %>% return()  
+  }else if (type == "ClickCell") {
+    "Click on one of the outlined cells to see the clusters and sizes that result in that field" %>% return()
+  }else if (type == "ClickPoint") {
+    paste0("Click on a point in the plot immediately below to see the ", 
+           "proportions in the rest of the dataset.") %>% return()
+  }
+  
+}
