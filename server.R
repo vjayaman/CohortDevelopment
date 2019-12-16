@@ -155,6 +155,7 @@ server <- function(input, output, session) {
     req(inp$data, values$locus)
     a1 <- inp$data[,2] %>% binaryStats()
     h <- colnames(inp$data)[3:ncol(inp$data)]
+    c1 <- c("h", "prop.cl")
     withProgress(message = "Collecting metric data: ", value = 0, {
       user$initial <-
         lapply(1:length(h), function(i) {
@@ -162,7 +163,7 @@ server <- function(input, output, session) {
                       detail = paste0("Going through thresholds, ", round(i/length(h), digits=2)*100, "% done"))
           globalMetrics(values$locus, h[i], inp$data, inp$minC, a1$Bin[which.min(a1$Freq)], 
                         percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
-        }) %>% bind_rows() %>% set_colnames(., c("h", "prop.cl", "perc.th", "th.type", "num.cl", "prop.of.data"))
+        }) %>% bind_rows() %>% set_colnames(., c(c1, "perc.th", "th.type", "num.cl", "prop.of.data"))
     })
     
     df1 <- tableNames(user$initial, "pos", inp$minC)
@@ -170,7 +171,7 @@ server <- function(input, output, session) {
     user$results <- merge(df1, df2, by = colnames(df2)[1:2]) %>% as_tibble()
     
     df <- user$results %>% select(1,2,3,5,6,8) %>% 
-      set_colnames(c("h","prop.cl","perc.th.p","prop.of.data.p","perc.th.n","prop.of.data.n"))
+      set_colnames(c(c1,"perc.th.p","prop.of.data.p","perc.th.n","prop.of.data.n"))
     
     df$h <- as.numeric(df$h)
     df$perc.th.p <- as.character(df$perc.th.p)
@@ -228,13 +229,11 @@ server <- function(input, output, session) {
       inds <- colnames(tmp)==values$lim
       colnames(tmp)[inds] <- "Limiting"
       colnames(tmp)[!inds] <- c("Clusters","Size","Non-limiting")
-      
-      
       text1 <- paste0("Cluster: ", tmp$Clusters, "\nProportion of cluster: ", 
                       round(tmp$`Non-limiting`, digits = 3), "\nCluster size: ", tmp$Size)
       
       {ggplot(tmp, aes(x = Clusters, y = `Non-limiting`, color = `Non-limiting`, size = Size, text = text1)) + 
-          ylab("Proportion of non-limiting factor") + geom_point() + 
+          ylab("Proportion of cluster with non-limiting factor") + geom_point() + 
           scale_color_gradient(low = "deepskyblue", high = "darkblue") + 
           ggtitle(paste0("Clusters not included in the above plot, and the proportion of ", 
                          "non-limiting factor in each cluster, at height ", h))} %>% 
@@ -268,8 +267,8 @@ server <- function(input, output, session) {
   output$all_percents <- renderPlotly({
     req(user$plot); req(user$initial); req(input$facet_by)
     df <- user$plot
-    plot_title <- paste0("Population of dataset found in homogeneous clusters of size ", inp$minC, " or larger\n")
-
+    plot_title <- paste0("Proportion of data found in homogeneous clusters of size ", inp$minC, " or larger\n")
+    
     ftype <- switch(input$facet_by, 
       "Positive" = list(colnames(df)[c(4,3)], colnames(df)[c(6,5)], "negative"), 
       "Negative" = list(colnames(df)[c(6,5)], colnames(df)[c(4,3)], "positive")) %>% 
