@@ -43,7 +43,7 @@ body <-   dashboardBody(
               tags$br(),
               fluidRow(
                 column(width = 2, offset = 1, shinyjs::hidden(uiOutput("facet_ui"))), 
-                column(width = 8, verbatimTextOutput("plot_exp"))), 
+                column(width = 6, verbatimTextOutput("plot_exp"))), 
               tags$br(), 
               fluidRow(
                 column(width = 10, offset = 1, plotlyOutput("all_percents", width = "100%", height = "800px"))), 
