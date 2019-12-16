@@ -1,3 +1,23 @@
+
+# When input data is first submitted, we check that the format is correct, and report with error messages
+# (ID | Binary Variable | Thresholds...)
+errMsg <- function(err_code) {
+  if (err_code == 1) {
+    "All heights must be numeric." %>% return()
+  }else if (err_code == 2) {
+    "The second column should \nbe have a non-numeric locus name." %>% return()
+  }else if (err_code == 3) {
+    "The first column should \nbe a list of genomes, with a \nnon-numeric heading." %>% return()
+  }else if (err_code == 4) {
+    "The locus data must be \nbinary, 1 for the positive \ncohort, 0 otherwise." %>% return()
+  }else if (err_code == 5) {
+    "Invalid filetype \n(onlyaccepts tsv/txt)." %>% return()
+  }else if (err_code == 0) {
+    "Input data formatted \ncorrectly." %>% return()
+  }
+}
+
+# This is the foundational text for each of the descriptions/explanations so far
 blurb <- function(a = NULL, type) {
   if (type == "FacetedPlot") {
     paste0("The selected variable to facet by is ", a[1], ". It is indicated by the \n", 
@@ -16,7 +36,7 @@ blurb <- function(a = NULL, type) {
   }
 }
 
-# Generating text output with basic overview of loaded data
+# Basic metrics of what the data looks like: the proportions of binary data, number of thresholds, ...
 output$base_metrics <- renderText({
   validate(need(!is.null(inp$data), ""))
   a1 <- binaryStats(inp$data[,2])
@@ -35,10 +55,11 @@ output$base_metrics <- renderText({
   )
 })
 
+# Brief explanation of the faceted plot on the Parameters tab, describing how the facet 
+# variable is used and how the plot can be interpreted.
 output$plot_exp <- renderText({
   req(user$plot); req(input$facet_by)
   df <- user$plot
-  
   facet_type <- switch(input$facet_by, 
     "Positive" = list(" or more ", colnames(df)[c(4,3)], colnames(df)[c(6,5)], " or less "), 
     "Negative" = list(" or less ", colnames(df)[c(6,5)], colnames(df)[c(4,3)], " or more ")) %>% unlist()

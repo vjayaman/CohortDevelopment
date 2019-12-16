@@ -6,8 +6,9 @@ server <- function(input, output, session) {
 
   # TAB 1 - INPUT DATA ----------------------------------------------------------------------------------------
   # Validate inputs
+  source("description.R", local = TRUE) # errMsg(err_code) - validates inputs
   source("on_submit_check_inputs.R", local = TRUE)
-  source("description.R", local = TRUE) # output$base_metrics from description.R
+  # output$base_metrics from description.R
   
   # Datatable of heights and number of clusters for each
   output$num_clusters <- renderDT({
@@ -61,16 +62,17 @@ server <- function(input, output, session) {
     withProgress(message = "Collecting metric data: ", value = 0, {
       user$initial <-
         lapply(1:length(h), function(i) {
-          incProgress(1/length(h),
-                      detail = paste0("Going through thresholds, ", round(i/length(h), digits=2)*100, "% done"))
+          incProgress(
+            1/length(h), 
+            detail = paste0("Going through thresholds, ", round(i/length(h), digits=2)*100, "% done"))
           globalMetrics(values$locus, h[i], inp$data, inp$minC, a1$Bin[which.min(a1$Freq)], 
                         percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
         }) %>% bind_rows() %>% set_colnames(., c(c1, "perc.th", "th.type", "num.cl", "prop.of.data"))
     })
     
-    df1 <- tableNames(user$initial, "pos", inp$minC)
     df2 <- tableNames(user$initial, "neg", inp$minC)
-    user$results <- merge(df1, df2, by = colnames(df2)[1:2]) %>% as_tibble()
+    user$results <- tableNames(user$initial, "pos", inp$minC) %>% 
+      merge(., df2, by = colnames(df2)[1:2]) %>% as_tibble()
     
     df <- user$results %>% select(1,2,3,5,6,8) %>% 
       set_colnames(c(c1,"perc.th.p","prop.of.data.p","perc.th.n","prop.of.data.n"))
@@ -98,8 +100,7 @@ server <- function(input, output, session) {
     {ggplot(df, aes(x = h, y = prop.of.data.p, col = perc.th.p)) + 
         geom_point(aes(text = text1)) + geom_line() + 
         xlab("\nHeight") + ylab("Fraction of population\n") + ggtitle(plot_title) + 
-        scale_y_continuous(labels = percent, limits = c(0,1)) + 
-        theme_bw() + scale_color_grey() + 
+        scale_y_continuous(labels = percent, limits = c(0,1)) + theme_bw() + scale_color_grey() + 
         theme(plot.margin = unit(c(1.5,1,2,2), "cm"), 
               axis.title.x.top = element_text(margin = margin(t = 20)), 
               axis.title.y.right = element_text(margin = margin(r = 20)))} %>% 

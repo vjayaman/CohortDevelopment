@@ -1,11 +1,12 @@
 
-# When data has been loaded into the app, enable the "Submit" button
+# When data has been loaded into the app, enables the "Submit" button
 observeEvent(input$data, {
   shinyjs::useShinyjs() 
   enable("submit")
 })
 
-# Checking user's data for valid column names, file extension, etc. (ID | Binary Variable | Thresholds...)
+# On submit-click, user input data is check for validity: valid column names, file extension, etc. 
+# (ID | Binary Variable | Thresholds...)
 observeEvent(input$submit, {
   req(input$data)
   values$path <- input$data$datapath
@@ -20,6 +21,8 @@ observeEvent(input$submit, {
                need(all(unique(inp$data[,2]) %in% c(1,0)), errMsg(4)))
       values$locus <- colnames(inp$data)[2]
       errMsg(0)
-    }else {errMsg(5)}
+    }else {
+      errMsg(5)
+    }
   })
 })

@@ -1,5 +1,5 @@
-# Modules for the binary variable app
 
+# Modules for the binary variable app
 percSlider <- function(input, output, session) {
   reactive({input$perc_inp})
 }

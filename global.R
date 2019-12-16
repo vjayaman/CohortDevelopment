@@ -14,12 +14,10 @@ stepSliderInput <- function(id, maxval) {
   sliderInput(ns("step_size"), "Step size: ", min = 1, max = maxval, value = maxval, step = 1)
 }
 
-thresholdDTInput <- function(id) {
-  ns <- NS(id)
-  DTOutput(ns("pos_neg"))
-}
-
 # Base functions -----------------------------------------------------------------------------
+# Table of: | Bin (0, 1) | Freq (frequency of each in the population) 
+#           | percent (percent of the population, so Freq/Total) 
+#           | Type (Negative, Positive) | Total (size of population) | 
 binaryStats <- function(df.col) {
   a1 <- df.col %>% table() %>% as.data.frame() %>% set_colnames(c("Bin","Freq"))
   tot <- sum(a1$Freq)
@@ -32,17 +30,20 @@ binaryStats <- function(df.col) {
   return(a1)
 }
 
+# Table of: | cluster number | cluster size | limiting factor (1 or 0) 
+# | WP (within-cluster proportion, as a character and a number)
 alleleBinCounts <- function(cl.calls, c.i, cohort.lim) {
   calls.of.cluster <- cl.calls[cl.calls$clusters == c.i,]
   nr <- nrow(calls.of.cluster)
   freqs <- table(calls.of.cluster[,"locus"])
   numerator <- 0
   if (!is.na(freqs[cohort.lim])) {numerator <- freqs[cohort.lim]}
-  # Returns: cluster number, cluster size, cohort.lim 1, WP
   tibble(cluster = c.i, size = nr, cohort.lim, 
          within.prop = paste(numerator, nr, sep = "/"), WP = numerator / nr) %>% return()
 }
 
+# Table of | val (e.g. 0.8, 1.0, 0.0, 0.1) | type (e.g. pos, pos, neg, neg)
+# Each of the percent homogeneity thresholds we need to evaluate for
 homogeneityTypes <- function(lhs, rhs, stepLhs, stepRhs) {
   pos_h <- seq(rhs, 1, by = stepRhs) # sequence going from right hand side boundary to 1
   neg_h <- seq(0, lhs, by = stepLhs) # sequence going from 0 to left hand side boundary
@@ -53,8 +54,8 @@ homogeneityTypes <- function(lhs, rhs, stepLhs, stepRhs) {
              stringsAsFactors = FALSE) %>% return()
 }
 
-# Given a table of homogeneity types and values, and one of clusters and WPs, return a list of tables,
-# one for each WP threshold value
+# Given a table of homogeneity types and values, and one of clusters and WPs, 
+# return a list of tables, one for each WP threshold value
 homogeneityTables <- function(th, key.cl) {
   lapply(1:nrow(th), function(r) {
     if (th$type[r] == "pos") {
@@ -71,42 +72,42 @@ globalMetrics <- function(gene, h, id.gene.clusters, minC, cohort.lim, lhs, rhs,
   cl.calls <- id.gene.clusters[,c(colnames(id.gene.clusters)[1],gene,h)] %>% 
     set_colnames(., c("id", "locus", "clusters"))
   
-  # all clusters, table of | Cluster | Size | Cohort.lim = 1 or 0 (only the limiting) | WP (fraction, then dec)
+  # All clusters, table of | Cluster | Size | Cohort.lim = 1 or 0 (only the limiting) | WP (fraction, then dec)
   mets <- cl.calls$clusters %>% unique() %>% 
     lapply(., function(cluster) alleleBinCounts(cl.calls, cluster, cohort.lim)) %>% bind_rows()
   
-  # clusters of size >= user-set minimum
+  # Clusters of size >= user-set minimum
   key.cl <- mets[mets$size>=minC,]
   prop.clusters <- paste0(nrow(key.cl), "/", nrow(mets))
   
   th <- homogeneityTypes(lhs, rhs, stepLhs, stepRhs)
-  
-  # if the "type" is pos, calculate the fraction of the population in clusters with WP >= the given 
+
+  # If the "type" is pos, calculate the fraction of the population in clusters with WP >= the given 
   # positive homogeneity value (e.g. >= 95 % of the cluster has x), else: WP <= the given negative 
   # homogeneity value (e.g. <= 25 % of the cluster has x)
   # do for all clusters with size >= minC, and note that x is the limiting factor (1 or 0)
   cl_tbl <- homogeneityTables(th, key.cl)
   
-  # for each homogeneity threshold (positive or negative), how many clusters of size >= minC have a WP 
+  # For each homogeneity threshold (positive or negative), how many clusters of size >= minC have a WP 
   # within the specified range?
   num_cl <- lapply(as.character(th$val), function(r) cl_tbl[[r]] %>% nrow()) %>% unlist() %>% 
     data.frame("val" = th$val, "num.of.clusters" = ., stringsAsFactors = FALSE)
   
-  # size of population
+  # Size of population
   tot.size <- sum(mets$size)
-  # for each homogeneity threshold (positive or negative), what is the fraction of the population
+  # For each homogeneity threshold (positive or negative), what is the fraction of the population
   # within the specified range and within clusters of size >= minC?
   prop_cl <- lapply(as.character(th$val), function(r) {
     df <- cl_tbl[[r]]$size
     ifelse(length(df)==0, 0, sum(df)/tot.size) %>% return()
   }) %>% unlist() %>% data.frame("val" = th$val, "prop.of.data" = ., stringsAsFactors = FALSE)
 
-  # table of | height | prop.clusters | homogeneity values | type (neg/pos) | num.of.clusters | prop.of.data
+  # Table of | height | prop.clusters | homogeneity values | type (neg/pos) | num.of.clusters | prop.of.data
   th %>% merge(num_cl) %>% merge(prop_cl) %>% 
     data.frame(h, prop.clusters, ., stringsAsFactors = FALSE) %>% return()
 }
 
-# Plot details -------------------------------------------------------------------------------
+# Plot details, increasing text size and maneuvering legend to below the plot 
 textSize <- function(p, incl.legend) {
   p + theme(
     strip.text.y = element_text(margin = margin(0,2,0,2)), 
@@ -118,7 +119,7 @@ textSize <- function(p, incl.legend) {
     legend.text = element_text(size = 12))
 }
 
-# Datatable setup ----------------------------------------------------------------------------
+# Add refined column names to associated plots, e.g. user$results table
 tableNames <- function(df, type, minC) {
   if (type == "pos") {fulltype <- "Positive"}else {fulltype <- "Negative"}
   df[df$th.type==type,] %>% select(-th.type) %>%
@@ -129,28 +130,12 @@ tableNames <- function(df, type, minC) {
         paste0("Proportion of population in ", tolower(fulltype), " homogeneity clusters"))) %>% return()
 }
 
+# Basic as.data.table setup, given a dataframe, center all column elements, 
+# remove filtering unless specified, remove pagination and rownames, and allow y-scrolling
 asDT <- function(df, filter_opt = "none") {
-  df %>% 
-    DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
-                                 dom = "ti", pageLength = nrow(df), scrollY = "500px"), 
-                  rownames = FALSE, filter = filter_opt)
-}
-
-# Error messages for user inputs -------------------------------------------------------------
-errMsg <- function(err_code) {
-  if (err_code == 1) {
-    "All heights must be numeric." %>% return()
-  }else if (err_code == 2) {
-    "The second column should \nbe have a non-numeric locus name." %>% return()
-  }else if (err_code == 3) {
-    "The first column should \nbe a list of genomes, with a \nnon-numeric heading." %>% return()
-  }else if (err_code == 4) {
-    "The locus data must be \nbinary, 1 for the positive \ncohort, 0 otherwise." %>% return()
-  }else if (err_code == 5) {
-    "Invalid filetype \n(onlyaccepts tsv/txt)." %>% return()
-  }else if (err_code == 0) {
-    "Input data formatted \ncorrectly." %>% return()
-  }
+  DT::datatable(df, options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
+                                   dom = "ti", pageLength = nrow(df), scrollY = "500px"), 
+                rownames = FALSE, filter = filter_opt)
 }
 
 perfClusters <- function(df, minC, h, lim) {
@@ -161,6 +146,7 @@ perfClusters <- function(df, minC, h, lim) {
   return(b2)
 }
 
+# List of tables of | Clusters | Source | Freq | Size | Fraction, one table per height
 filterPerfect <- function(df, type, minC, perc) {
   heights <- colnames(df)[-1][-1]
   lapply(heights, function(h) {
