@@ -9,7 +9,7 @@ errMsg <- function(err_code) {
   }else if (err_code == 3) {
     "The first column should \nbe a list of genomes, with a \nnon-numeric heading." %>% return()
   }else if (err_code == 4) {
-    "The locus data must be \nbinary, 1 for the positive \ncohort, 0 otherwise." %>% return()
+    "The locus data must be \nbinary." %>% return()
   }else if (err_code == 5) {
     "Invalid filetype \n(onlyaccepts tsv/txt)." %>% return()
   }else if (err_code == 0) {
@@ -33,6 +33,9 @@ blurb <- function(a = NULL, type) {
   }else if (type == "ClickPoint") {
     paste0("Click on a point in the plot immediately below to see the ", 
            "proportions in the rest of the dataset.") %>% return()
+  }else if (type == "ClickRow") {
+    paste0("Click on a row to see all clusters and proportions at the height. \n", 
+           "You can filter to see the homogeneous, larger clusters.")
   }
 }
 

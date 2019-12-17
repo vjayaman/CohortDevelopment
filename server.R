@@ -172,7 +172,31 @@ server <- function(input, output, session) {
   # datatable
   output$results <- DT::renderDT({
     req(user$results)
-    user$results %>% asDT(filter = "top") %>% formatRound(columns = c(5,8), digits = 4)
+    user$results %>% 
+      DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
+                                       dom = "ti", pageLength = nrow(df), scrollY = "500px"), 
+                    rownames = FALSE, filter = "top", selection = "single") %>% 
+      formatRound(columns = c(5,8), digits = 4)
+  })
+  
+  output$click_final <- renderText({
+    validate(need(!is.null(user$results), ""))
+    blurb(type = "ClickRow")
+  })
+  
+  output$final <- renderDT({
+    validate(need(!is.null(user$results), ""), need(length(input$results_rows_selected)>0, ""))
+    
+    rowX <- user$results[input$results_rows_selected,]
+    df <- readData("FNC_MBS_Example.tsv") %>% perfClusters(., rowX$Height) %>% ungroup()
+    df$charFrac <- paste0(df$Freq, "/", df$Size)
+    
+    df <- df %>% select(Clusters, Source, Size, charFrac, Fraction)
+    df_a <- df %>% filter(Source == 0) %>% set_colnames(c("Clusters","Non-human","Size","Non-human proportion of cluster", "NValue"))
+    df_b <- df %>% filter(Source != 0) %>% set_colnames(c("Clusters","Human","Size","Human proportion of cluster", "HValue"))
+    
+    toshow <- full_join(df_a, df_b)
+    toshow[is.na(toshow)] <- 0
+    asDT(toshow)
   })
 }
-

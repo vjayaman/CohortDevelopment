@@ -15,6 +15,9 @@ observeEvent(input$submit, {
   output$check_input <- renderText({
     if (tools::file_ext(values$path) %in% c("tsv","txt")) {
       inp$data <- readData(values$path)
+      # inp$data$Source[inp$data$Source==1] <- "Human"
+      # inp$data$Source[inp$data$Source!=1] <- "Non-human"
+      # print(head(inp$data))
       validate(need(all(varhandle::check.numeric(colnames(inp$data)[-1][-1])), errMsg(1)),
                need(!varhandle::check.numeric(colnames(inp$data)[2]), errMsg(2)),
                need(!varhandle::check.numeric(colnames(inp$data)[1]), errMsg(3)),

@@ -61,7 +61,10 @@ body <-   dashboardBody(
                        plotlyOutput("all_percents", width = "100%", height = "800px"))
                 ), 
               tags$br(), tags$br(), 
-              fluidRow(column(width = 10, offset = 1, DTOutput("results")))
+              fluidRow(column(width = 10, offset = 1, 
+                              verbatimTextOutput("click_final"), 
+                              DTOutput("results"), 
+                              DTOutput("final")))
               )
           )
   )

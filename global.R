@@ -138,7 +138,7 @@ asDT <- function(df, filter_opt = "none") {
                 rownames = FALSE, filter = filter_opt)
 }
 
-perfClusters <- function(df, minC, h, lim) {
+perfClusters <- function(df, h) {
   b <- df[,c(h,"Source")] %>% group_by_all() %>% count() %>% set_colnames(c("Clusters","source","num"))
   d <- aggregate(b$num, by = list(Clusters = b$Clusters), FUN = sum) %>% as_tibble()
   b2 <- left_join(b, d, by = "Clusters") %>% set_colnames(c("Clusters","Source","Freq","Size"))
@@ -150,7 +150,7 @@ perfClusters <- function(df, minC, h, lim) {
 filterPerfect <- function(df, type, minC, perc) {
   heights <- colnames(df)[-1][-1]
   lapply(heights, function(h) {
-    perfClusters(df,minC,h,type) %>% 
+    perfClusters(df,h) %>% 
       filter(Source==type & Size>=minC & (Fraction %in% perc))
   }) %>% set_names(heights) %>% return()
 }
