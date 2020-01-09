@@ -47,8 +47,10 @@ body <-   dashboardBody(
               fluidRow(
                 column(width = 8, offset = 2, 
                   verbatimTextOutput("click_limplot"), 
-                  plotlyOutput("limiting_factor", width = "100%", height = "550px"), 
-                  plotlyOutput("nonlimiting", width = "100%", height = "550px"))
+                  plotlyOutput("limiting_factor", width = "100%", height = "700px"), 
+                  plotlyOutput("negative_bubble", width = "100%", height = "650px"), 
+                  # plotlyOutput("positive_bubble", width = "100%", height = "650px"), s
+                  plotlyOutput("nonlimiting_bubble", width = "100%", height = "650px"))
                 ), 
               tags$br(),
               fluidRow(
