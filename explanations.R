@@ -29,12 +29,15 @@ blurb <- function(a = NULL, type) {
            "fraction of the data found in clusters where \n", 
            a[5], a[6], "of the cluster has the limiting factor.") %>% return()  
   }else if (type == "ClickCell") {
-    "Click on one of the outlined cells to see the clusters and sizes that result in that field" %>% return()
+    paste0("Each of the outlined cells in the table below indicate a number of clusters.", 
+           "Selecting one of these cells results in a table of the corresponding ", 
+           "clusters and their respective sizes.") %>% return()
   }else if (type == "ClickPoint") {
     paste0("Click on a point in the plot immediately below to see the ", 
            "proportions in the rest of the dataset.") %>% return()
   }else if (type == "ClickRow") {
-    paste0("Click on a row to see the specified homogeneous clusters and their proportions. \n")
+    paste0("Click on a row in the table below to see the specifics of the clusters ", 
+           "indicated in bold") %>% return()
   }
 }
 

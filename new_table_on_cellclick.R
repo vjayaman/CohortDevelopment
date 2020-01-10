@@ -2,9 +2,10 @@
 # Text output informing the user that clicking within a specified cell range of the table 
 # will result in another table, with details about cluster numbers and sizes (those that 
 # make up the proportions first selected.)
-output$click_cells <- renderText({
+
+output$click_cells <- renderUI({
   validate(need(!is.null(inp$data), ""))
-  blurb(type = "ClickCell")
+  box(blurb(type = "ClickCell"))
 })
 
 # On cell click of the main table, outputs a mini table of clusters and sizes associated 
@@ -62,13 +63,13 @@ output$final <- renderDT({
   df$Type[df$Fraction <= rowX$`Negative threshold`] <- "Negative"
   df$Type[df$Fraction >= rowX$`Positive threshold`] <- "Positive"
   
-  toshow <- df %>% filter(!is.na(Type)) %>% 
+  user$final <- toshow <- df %>% filter(!is.na(Type)) %>% 
     set_colnames(c("Cluster","Limiting factor","Cluster Size","Proportion","As decimal","Homogeneity type"))
   cnames <- colnames(toshow)
   
   # factor columns so table filtering will be with selectize, not sliders
   toshow[cnames] <- lapply(toshow[cnames], as.factor)
-  
+
   asDT(toshow, filter_opt = "top") %>% 
     formatRound(columns = 5, digits = 4) %>% 
     formatStyle('Homogeneity type', target = 'row', 
@@ -76,5 +77,9 @@ output$final <- renderDT({
     )
 })
 
-
-
+# Download button: saves datatable info as "Homogeneity-both-<year>-<month>-<day>-<hours>-<minutes>.txt"
+output$dnld_final <- downloadHandler(
+  filename = paste0("Specific-clusters-", format(Sys.time(), format = "%Y-%m-%d-%H-%M"),".txt"),
+  content = function(file) {
+    write.table(user$final, file, sep = "\t", quote = FALSE, row.names = FALSE)
+})

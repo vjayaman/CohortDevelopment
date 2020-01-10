@@ -37,8 +37,10 @@ values <- reactiveValues(locus = NULL, path = NULL, lim = NULL)
 
 # user$nonlim <- same as user$lim, but for the nonlimiting factor instead
 user <- reactiveValues(input = NULL, results = NULL, initial = NULL, plot = NULL, 
-                       tbl = NULL, lim = NULL, nonlim = NULL, ptype = NULL)
+                       tbl = NULL, lim = NULL, nonlim = NULL, ptype = NULL, final = NULL)
 
 # inp$minC <- user-set minimum cluster size
 # inp$data <- user's input data
 inp <- reactiveValues(minC = NULL, data = NULL, type1 = NULL, type2 = NULL)
+
+plots <- reactiveValues(bubble_data = NULL, bubble_title = NULL)

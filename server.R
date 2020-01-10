@@ -111,7 +111,6 @@ server <- function(input, output, session) {
     tableX <- user$results
     tableX$`Number of negative homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     tableX$`Number of positive homogeneity clusters` %<>% paste0("<b>", ., "</b>")
-    
     cols <- colnames(tableX)
     tableX[cols] <- lapply(tableX[cols], as.factor) #https://stackoverflow.com/questions/33180058/coerce-multiple-columns-to-factors-at-once
     tableX %>% 
@@ -122,10 +121,11 @@ server <- function(input, output, session) {
   })
   
   # mini explanation - click on a row of the results table to get specifics about the indicated clusters
-  output$click_final <- renderText({
+  output$click_results <- renderUI({
     validate(need(!is.null(user$results), ""))
-    blurb(type = "ClickRow")
+    tagList(
+      box(column(12, 
+          fluidRow(blurb(type = "ClickRow")), br(), 
+          fluidRow(downloadButton("dnld_results", "Download table")))))
   })
-  
-
 }
