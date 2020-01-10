@@ -37,7 +37,7 @@ body <-   dashboardBody(
           ),
     
     tabItem(tabName = "tab-params", 
-            fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("param_ui")))),
+            fluidRow(column(width = 10, offset = 1, uiOutput("param_ui"))),
             
             fluidRow(column(width = 10, offset = 1,  
                             verbatimTextOutput("click_limplot"), 

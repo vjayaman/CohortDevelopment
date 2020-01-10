@@ -112,7 +112,8 @@ server <- function(input, output, session) {
     tableX$`Number of negative homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     tableX$`Number of positive homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     cols <- colnames(tableX)
-    tableX[cols] <- lapply(tableX[cols], as.factor) #https://stackoverflow.com/questions/33180058/coerce-multiple-columns-to-factors-at-once
+    tableX[cols] <- lapply(tableX[cols], as.factor) 
+    #https://stackoverflow.com/questions/33180058/coerce-multiple-columns-to-factors-at-once
     tableX %>% 
       DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
                                        dom = "ti", pageLength = nrow(df), scrollY = "500px"), 

@@ -11,18 +11,21 @@ observe({
     pos_lbl <- "Positive homogeneity (e.g. Cluster must have >= 80% be 1 to be counted):"
     neg_lbl <- "Negative homogeneity (e.g. Cluster must have <= 10% be 1 to be counted):"
     tagList(
-      fluidRow(
-        column(width = 4, offset = 1, 
-          percSliderInput("rhs_perc", lbl = pos_lbl, val = 70), 
-          uiOutput("posStepSizeUI"), 
-          radioButtons("num_or_prop", "Type of plot: ", 
-                       choices = c("Number of clusters" = "num", "Fraction of population" = "prop"))), 
-        
-        column(width = 4, offset = 1, 
-          percSliderInput("lhs_perc", lbl = neg_lbl, val = 35),
-          uiOutput("negStepSizeUI"), 
-          actionButton("update", "Update inputs"))
-        )
+      box(width = 12, 
+          fluidRow(
+            column(width = 4, offset = 1, 
+                   percSliderInput("rhs_perc", lbl = pos_lbl, val = 70), 
+                   uiOutput("posStepSizeUI"), 
+                   radioButtons("num_or_prop", "Type of plot: ", 
+                                choices = c("Number of clusters" = "num", "Fraction of population" = "prop"))), 
+            
+            column(width = 4, offset = 1, 
+                   percSliderInput("lhs_perc", lbl = neg_lbl, val = 35),
+                   uiOutput("negStepSizeUI"), 
+                   actionButton("update", "Update inputs"))
+          )
+        ), 
+      box(title = "Explanation: ", blurb(type = "ParamsExp"), collapsible = TRUE, collapsed = TRUE)
       )
   })
   output$posStepSizeUI <- renderUI({stepSliderInput("step_size_p", 100-percRhs(), 2)})
