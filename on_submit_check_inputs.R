@@ -1,12 +1,11 @@
 
-# When data has been loaded into the app, enables the "Submit" button
-# observeEvent(input$data, {
-#   shinyjs::useShinyjs() 
-#   enable("submit")
-# })
 
 observeEvent(input$check_validity, {
   req(input$data)
+  
+  shinyjs::useShinyjs()
+  disable("submit")
+  inp$data <- NULL
   
   values$path <- input$data$datapath
   inp$minC <- input$minC
@@ -45,7 +44,7 @@ observeEvent(input$check_validity, {
       errMsg(5)            # Invalid filetype (onlyaccepts tsv/txt)
     }
   })
-  shinyjs::useShinyjs() 
+  # When data has been loaded and validated, enables the "Submit" button
   enable("submit")
 })
 
