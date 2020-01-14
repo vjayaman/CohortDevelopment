@@ -9,9 +9,13 @@ errMsg <- function(err_code) {
   }else if (err_code == 3) {
     "The first column should \nbe a list of genomes, with a \nnon-numeric heading." %>% return()
   }else if (err_code == 4) {
-    "The locus data must be \nbinary." %>% return()
+    "The locus data must \nbe binary." %>% return()
   }else if (err_code == 5) {
     "Invalid filetype \n(onlyaccepts tsv/txt)." %>% return()
+  }else if (err_code == 6) {
+    "There are one or \nmore empty cells in \nthe dataset." %>% return()
+  }else if (err_code == 7) {
+    "Minimum cluster size \nnot specified." %>% return()
   }else if (err_code == 0) {
     "Input data formatted \ncorrectly." %>% return()
   }

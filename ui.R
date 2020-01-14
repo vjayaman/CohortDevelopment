@@ -21,11 +21,12 @@ body <-   dashboardBody(
                                                multiple = FALSE, accept = c("text/tsv", ".tsv", ".txt"),
                                                buttonLabel = "Browse")),
                    column(width = 3, numericInput("minC", label = "Minimum cluster size: ", value = 10)),
-                   column(width = 3,
+                   column(width = 2,
                           verbatimTextOutput("check_input", placeholder = TRUE),
+                          actionButton("check_validity", "Check input validity", style = "font-size: 16px;"), 
                           shinyjs::useShinyjs(),
                           disabled(actionButton("submit", "Submit", style = "font-size: 16px;"))),
-                   column(width = 3,
+                   column(width = 4,
                           verbatimTextOutput("base_metrics", placeholder = TRUE),
                           tags$head(tags$style(HTML("#base_metrics {font-size: 16px;}"))))
                    ))
