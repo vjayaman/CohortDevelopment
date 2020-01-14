@@ -5,7 +5,7 @@
 
 output$click_cells <- renderUI({
   validate(need(!is.null(inp$data), ""))
-  box(blurb(type = "ClickCell"))
+  box(width = 12, blurb(type = "ClickCell"))
 })
 
 # On cell click of the main table, outputs a mini table of clusters and sizes associated 
@@ -34,6 +34,15 @@ output$cluster_info <- renderDT({
       filter(Freq >= inp$minC) %>% 
       set_colnames(c("Clusters","Size")) %>% asDT()
   }
+})
+
+# mini explanation - click on a row of the results table to get specifics about the indicated clusters
+output$click_results <- renderUI({
+  validate(need(!is.null(user$results), ""))
+  # fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("click_results"))))
+  tagList(
+    downloadButton("dnld_results", "Download table"), 
+    blurb(type = "ClickRow"))
 })
 
 # On row click of the final results table, outputs a table of the clusters and specific info at that height

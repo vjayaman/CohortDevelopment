@@ -9,7 +9,7 @@ server <- function(input, output, session) {
   source("explanations.R", local = TRUE) # errMsg(err_code) - validates inputs
   source("on_submit_check_inputs.R", local = TRUE)
   # output$base_metrics from explanations.R
-  
+
   ## Datatable of heights and number of clusters for each
   output$num_clusters <- renderDT({
     validate(need(!is.null(inp$data), "")); validate(need(!is.null(user$lim), ""))
@@ -121,12 +121,12 @@ server <- function(input, output, session) {
       formatRound(columns = c(5,8), digits = 4)
   })
   
-  # mini explanation - click on a row of the results table to get specifics about the indicated clusters
-  output$click_results <- renderUI({
-    validate(need(!is.null(user$results), ""))
-    tagList(
-      box(column(12, 
-          fluidRow(blurb(type = "ClickRow")), br(), 
-          fluidRow(downloadButton("dnld_results", "Download table")))))
-  })
+  # # mini explanation - click on a row of the results table to get specifics about the indicated clusters
+  # output$click_results <- renderUI({
+  #   validate(need(!is.null(user$results), ""))
+  #   tagList(
+  #     box(column(12, 
+  #                fluidRow(blurb(type = "ClickRow")), br(), 
+  #                fluidRow(downloadButton("dnld_results", "Download table")))))
+  # })
 }

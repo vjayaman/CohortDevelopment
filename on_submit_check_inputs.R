@@ -41,3 +41,35 @@ observeEvent(input$submit, {
     }
   })
 })
+
+# When data has been loaded into the app, enables the "Submit" button
+# observeEvent(input$data, {
+#   shinyjs::useShinyjs()
+#   enable("check")
+#   # enable("submit")
+# })
+# 
+# observeEvent(input$check, {
+#   req(input$data)
+#   values$path <- input$data$datapath
+#   inp$minC <- input$minC
+# 
+#   if (!(input$posV %in% "")) {values$posV <- input$posV}
+#   if (!(input$negV %in% "")) {values$negV <- input$negV}
+#   print("step1")
+#   
+#   output$check_input <- renderText({
+#     print("step2")
+#     validate(
+#       need(
+#         (values$posV == as.character(1) & values$negV == as.character(0)) | 
+#           (all(c(values$posV, values$negV) %in% "")), 
+#         "No further changes necessary."  
+#       )
+#     )
+#     "Positive and negative values must be selected."
+#   })
+# })
+
+
+

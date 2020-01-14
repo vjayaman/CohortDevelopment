@@ -29,12 +29,15 @@ output$limiting_factor <- renderPlotly({
       ggtitle(paste0("Number of homogeneous clusters of size >= ", inp$minC, 
                      ". \n(Limiting factor homogeneity)"))
   }
-  g %>% textSize() %>% ggplotly(., tooltip = c("text1"), source = "limitplot") %>% 
-    event_register(., "plotly_click")
+    g %>% textSize() %>% 
+      ggplotly(., tooltip = c("text1"), source = "limitplot") %>% 
+      event_register(., "plotly_click")
 })
 
-observeEvent(event_data("plotly_click", source = "limitplot"), {
-  s <- event_data("plotly_click", source = "limitplot")
+observeEvent(suppressWarnings(event_data("plotly_click", source = "limitplot")), {
+  suppressWarnings(
+    s <- event_data("plotly_click", source = "limitplot")  
+  )
   req(inp$data, length(s))
   h <- s$x %>% as.character()
   plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
@@ -61,6 +64,7 @@ observeEvent(event_data("plotly_click", source = "limitplot"), {
 
 output$negative_bubble <- renderPlotly({
   req(plots$bubble_data, plots$bubble_title)
+  ptitle <- paste0(plots$bubble_title, ", negative homogeneity")
   
   # sequence going from 0 to left hand side boundary
   pos_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
@@ -76,11 +80,12 @@ output$negative_bubble <- renderPlotly({
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   ggplot(toplot, aes(x = Clusters, y = Fraction, size = Size, color = interval)) + 
     geom_point() + scale_y_continuous(limits = c(0,1)) + 
-    scale_color_manual(values = color_set) + ggtitle(plots$bubble_title)
+    scale_color_manual(values = color_set) + ggtitle(ptitle)
 })
 
 output$positive_bubble <- renderPlotly({
   req(plots$bubble_data, plots$bubble_title)
+  ptitle <- paste0(plots$bubble_title, ", positive homogeneity")
   
   # sequence going from right hand side boundary to 1
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
@@ -96,7 +101,7 @@ output$positive_bubble <- renderPlotly({
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   ggplot(toplot, aes(x = Clusters, y = Fraction, size = Size, color = interval)) + 
     geom_point() + scale_y_continuous(limits = c(0,1)) + 
-    scale_color_manual(values = color_set) + ggtitle(plots$bubble_title)
+    scale_color_manual(values = color_set) + ggtitle(ptitle)
 })
 
 output$all_percents <- renderPlotly({
