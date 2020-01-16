@@ -57,7 +57,7 @@ output$limiting_factor <- renderPlotly({
 
 observeEvent(event_data("plotly_click", source = "limitplot"), {
   s <- event_data("plotly_click", source = "limitplot")
-  req(inp$data, length(s))
+  req(user$results, inp$data, length(s))
   
   h <- s$x %>% as.character()
   plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
@@ -83,7 +83,7 @@ observeEvent(event_data("plotly_click", source = "limitplot"), {
 })
 
 output$negative_bubble <- renderPlotly({
-  req(plots$bubble_data, plots$bubble_title)
+  req(user$results, plots$bubble_data, plots$bubble_title)
   
   # sequence going from 0 to left hand side boundary
   pos_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
@@ -105,7 +105,7 @@ output$negative_bubble <- renderPlotly({
 })
 
 output$positive_bubble <- renderPlotly({
-  req(plots$bubble_data, plots$bubble_title)
+  req(user$results, plots$bubble_data, plots$bubble_title)
   
   # sequence going from right hand side boundary to 1
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()

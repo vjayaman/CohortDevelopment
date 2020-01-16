@@ -5,6 +5,7 @@ observeEvent(input$check_validity, {
   shinyjs::useShinyjs()
   shinyjs::hide("submit")       # hide submit button when the loaded file changes
   inp$data <- NULL              # reset inputs relying on inp$data
+  user$results <- NULL
   
   values$path <- input$data$datapath
   inp$minC <- input$minC
