@@ -4,14 +4,14 @@
 # make up the proportions first selected.)
 
 output$click_cells <- renderUI({
-  validate(need(!is.null(inp$data), ""))
+  req(inp$data)
   box(width = 12, blurb(type = "ClickCell"))
 })
 
 # On cell click of the main table, outputs a mini table of clusters and sizes associated 
 # with the number selected in the main table
 output$cluster_info <- renderDT({
-  validate(need(!is.null(user$tbl), ""), need(length(input$num_clusters_cell_clicked)>0, ""))
+  req(inp$data, user$tbl, length(input$num_clusters_cell_clicked)>0)
   
   clicked <- input$num_clusters_cell_clicked
   if (clicked$col %in% c(2:6)) {
@@ -20,16 +20,13 @@ output$cluster_info <- renderDT({
   }
   h <- user$tbl$Heights[cell$row]
 
-  if (clicked$col %in% c(3,4)) {
-    # column of limiting factor selected
+  if (clicked$col %in% c(3,4)) {        # column of limiting factor selected
     user$lim[[h]] %>% ungroup() %>% select(Clusters,Size) %>% asDT()
     
-  }else if (clicked$col %in% c(5,6)) {
-    # column of nonlimiting factor selected
+  }else if (clicked$col %in% c(5,6)) {  # column of nonlimiting factor selected
     user$nonlim[[h]] %>% ungroup() %>% select(Clusters,Size) %>% asDT()
     
-  }else if (clicked$col == 2) {
-    # number of clusters with size >= minC
+  }else if (clicked$col == 2) {         # number of clusters with size >= minC
     inp$data %>% pull(h) %>% table() %>% as.data.frame() %>% 
       filter(Freq >= inp$minC) %>% 
       set_colnames(c("Clusters","Size")) %>% asDT()
@@ -38,8 +35,7 @@ output$cluster_info <- renderDT({
 
 # mini explanation - click on a row of the results table to get specifics about the indicated clusters
 output$click_results <- renderUI({
-  validate(need(!is.null(user$results), ""))
-  # fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("click_results"))))
+  req(user$results)
   tagList(
     downloadButton("dnld_results", "Download table"), 
     blurb(type = "ClickRow"))
@@ -47,11 +43,9 @@ output$click_results <- renderUI({
 
 # On row click of the final results table, outputs a table of the clusters and specific info at that height
 output$final <- renderDT({
-  validate(need(!is.null(user$results), ""), need(length(input$results_rows_selected)==1, ""), 
-           need(!is.null(inp$minC), ""))
-  
+  req(user$results, inp$minC, length(input$results_rows_selected)==1)
   rowX <- user$results[input$results_rows_selected,]    # the selected row
-  lim <- values$lim
+  lim <- inp$limiting
   
   # | Clusters | Source | Size | Fraction of cluster with source | Decimal | Type (pos/neg)
   df <- inp$data %>% perfClusters(., rowX$Height) %>% ungroup()

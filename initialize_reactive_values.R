@@ -1,4 +1,12 @@
 
+# cell$row, cell$col
+# values$locus, values$path
+# user$input, user$results, user$initial, user$plot, user$tbl, user$lim, 
+# user$nonlim, user$ptype, user$final, user$pos, user$neg, user$bin
+# inp$minC, inp$data, inp$type1, inp$type2, inp$limiting
+# plots$bubble_data, plots$bubble_title
+
+
 # The variables that are updated and used throughout the app
 
 # cell$row <- selected height in the first height table on the first ("input") tab
@@ -8,7 +16,7 @@ cell <- reactiveValues(row = NULL, col = NULL)
 # values$locus <- the name of the second column in the user's input data (e.g. "Source", or "Locus")
 # values$path <- the datapath to where the user's input data can be accessed
 # values$lim <- 0 or 1, whichever is the limiting factor
-values <- reactiveValues(locus = NULL, path = NULL, lim = NULL, posV = 1, negV = 0)
+values <- reactiveValues(locus = NULL, path = NULL)
 
 # user$results <- table with columns:
 #   Height, Proportion of clusters with size >= minC (a user-set minimum cluster size), 
@@ -37,10 +45,11 @@ values <- reactiveValues(locus = NULL, path = NULL, lim = NULL, posV = 1, negV =
 
 # user$nonlim <- same as user$lim, but for the nonlimiting factor instead
 user <- reactiveValues(input = NULL, results = NULL, initial = NULL, plot = NULL, 
-                       tbl = NULL, lim = NULL, nonlim = NULL, ptype = NULL, final = NULL)
+                       tbl = NULL, lim = NULL, nonlim = NULL, ptype = NULL, final = NULL, 
+                       pos = NULL, neg = NULL, bin = NULL)
 
 # inp$minC <- user-set minimum cluster size
 # inp$data <- user's input data
-inp <- reactiveValues(minC = NULL, data = NULL, type1 = NULL, type2 = NULL)
+inp <- reactiveValues(minC = NULL, data = NULL, type1 = NULL, type2 = NULL, limiting = NULL)
 
 plots <- reactiveValues(bubble_data = NULL, bubble_title = NULL)

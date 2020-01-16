@@ -1,6 +1,27 @@
+# Brief explanation of the faceted plot on the Parameters tab, describing how the facet 
+# variable is used and how the plot can be interpreted.
+output$plot_exp <- renderUI({
+  req(user$plot, input$facet_by)
+  df <- user$plot
+  cn <- colnames(df)
+  # cn[c(4,3)] == Prop of pop in +'ve homogeneity clusters, +'ve threshold
+  # cn[c(6,5)] == Prop of pop in -'ve homogeneity clusters, -'ve threshold
+  facet_type <- switch(input$facet_by, 
+                       "Positive" = list(" or more ", cn[c(4,3)], cn[c(6,5)], " or less "), 
+                       "Negative" = list(" or less ", cn[c(6,5)], cn[c(4,3)], " or more ")) %>% unlist()
+  
+  nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
+  
+  b1 <- df[1,] %>% pull(facet_type[3]) %>% as.numeric() %>% scales::percent()
+  cx <- df %>% pull(facet_type[5]) %>% unique() %>% as.numeric() %>% scales::percent() %>% toString()
+  
+  c(input$facet_by, nottype) %>% tolower() %>% 
+    c(., b1, facet_type[1], cx, facet_type[6]) %>% 
+    blurb(., "FacetedPlot")
+})
+
 output$limiting_factor <- renderPlotly({
-  req(user$results)
-  validate(need(!is.null(user$ptype), ""))
+  req(user$results, user$ptype)
   
   # user input on showing "Number of clusters" or "Fraction of population" along the y-axis, where 
   # the clusters are those >= minC, with homogeneity at a level specified by the point color
@@ -34,27 +55,26 @@ output$limiting_factor <- renderPlotly({
       event_register(., "plotly_click")
 })
 
-observeEvent(suppressWarnings(event_data("plotly_click", source = "limitplot")), {
-  suppressWarnings(
-    s <- event_data("plotly_click", source = "limitplot")  
-  )
+observeEvent(event_data("plotly_click", source = "limitplot"), {
+  s <- event_data("plotly_click", source = "limitplot")
   req(inp$data, length(s))
+  
   h <- s$x %>% as.character()
   plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
                                "limiting factor in each cluster, at height ", h)
   # group data by clusters at selected h and source, then count freq. of the binary variable
-  b <- inp$data %>% select(h,"Source") %>% 
-    group_by_all() %>% count() %>% 
+  b <- inp$data %>% select(h,"Source") %>%
+    group_by_all() %>% count() %>%
     set_colnames(c("Clusters", "Source", "Count"))
-  
+
   # add columns of the (1) cluster sizes and (2) fraction of cluster with 0 or 1
-  b2 <- aggregate(b$Count, by = list(cl = b$Clusters), FUN = sum) %>% as_tibble() %>% 
-    set_colnames(c("Clusters", "Size")) %>% 
+  b2 <- aggregate(b$Count, by = list(cl = b$Clusters), FUN = sum) %>% as_tibble() %>%
+    set_colnames(c("Clusters", "Size")) %>%
     left_join(b, ., by = "Clusters") %>% ungroup()
   b2$Fraction <- b2$Count/b2$Size
-  
+
   tmp <- b2 %>% filter(Fraction == 1)
-  tmp$Source <- abs(tmp$Source - 1)
+  tmp$Source <- lapply(tmp$Source, function(x) setdiff(user$bin, x)) %>% unlist()
   tmp$Count <- 0
   tmp$Fraction <- tmp$Count/tmp$Size
   b2 <- rbind(b2, tmp)
@@ -64,20 +84,21 @@ observeEvent(suppressWarnings(event_data("plotly_click", source = "limitplot")),
 
 output$negative_bubble <- renderPlotly({
   req(plots$bubble_data, plots$bubble_title)
-  ptitle <- paste0(plots$bubble_title, ", negative homogeneity")
   
   # sequence going from 0 to left hand side boundary
   pos_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
   
-  toplot <- plots$bubble_data %>% filter(Source == values$lim)
+  toplot <- plots$bubble_data %>% filter(Source == inp$limiting)
   for (th in pos_h) 
     toplot$interval[toplot$Fraction <= th] <- th
   
   toplot <- toplot %>% filter(!is.na(interval))
   toplot$interval %<>% factor(., levels = pos_h)
-    
+  
+  ptitle <- paste0(plots$bubble_title, ", negative homogeneity")  
   num_colors <- toplot$interval %>% unique() %>% length()
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
+  
   ggplot(toplot, aes(x = Clusters, y = Fraction, size = Size, color = interval)) + 
     geom_point() + scale_y_continuous(limits = c(0,1)) + 
     scale_color_manual(values = color_set) + ggtitle(ptitle)
@@ -85,27 +106,28 @@ output$negative_bubble <- renderPlotly({
 
 output$positive_bubble <- renderPlotly({
   req(plots$bubble_data, plots$bubble_title)
-  ptitle <- paste0(plots$bubble_title, ", positive homogeneity")
   
   # sequence going from right hand side boundary to 1
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
   
-  toplot <- plots$bubble_data %>% filter(Source == values$lim)
+  toplot <- plots$bubble_data %>% filter(Source == inp$limiting)
   for (th in pos_h) 
     toplot$interval[toplot$Fraction >= th] <- th
   
   toplot <- toplot %>% filter(!is.na(interval))
   toplot$interval %<>% factor(., levels = pos_h)
-    
+
+  ptitle <- paste0(plots$bubble_title, ", positive homogeneity")
   num_colors <- toplot$interval %>% unique() %>% length()
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
+  
   ggplot(toplot, aes(x = Clusters, y = Fraction, size = Size, color = interval)) + 
     geom_point() + scale_y_continuous(limits = c(0,1)) + 
     scale_color_manual(values = color_set) + ggtitle(ptitle)
 })
 
 output$all_percents <- renderPlotly({
-  req(user$results); req(input$facet_by); validate(need(!is.null(user$ptype), ""))
+  req(user$results, input$facet_by, user$ptype)
   
   plot_title <- paste0("Data found in homogeneous clusters of size ", inp$minC, " or larger\n")
   

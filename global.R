@@ -19,14 +19,12 @@ stepSliderInput <- function(id, maxval, selected = NULL) {
 # Table of: | Bin (0, 1) | Freq (frequency of each in the population) 
 #           | percent (percent of the population, so Freq/Total) 
 #           | Type (Negative, Positive) | Total (size of population) | 
-binaryStats <- function(df.col) {
+binaryStats <- function(df.col, pos, neg) {
   a1 <- df.col %>% table() %>% as.data.frame() %>% set_colnames(c("Bin","Freq"))
   tot <- sum(a1$Freq)
   a1$percent <- (a1$Freq/tot) %>% scales::percent()
-  pos <- a1$Bin==1
-  neg <- a1$Bin==0
-  a1$Type[pos] <- "Positive"
-  a1$Type[neg] <- "Negative"
+  a1$Type[a1$Bin == pos] <- "Positive"
+  a1$Type[a1$Bin == neg] <- "Negative"
   a1$Tot <- sum(a1$Freq)
   return(a1)
 }

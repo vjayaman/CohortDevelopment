@@ -12,14 +12,13 @@ server <- function(input, output, session) {
 
   ## Datatable of heights and number of clusters for each
   output$num_clusters <- renderDT({
-    validate(need(!is.null(inp$data), "")); validate(need(!is.null(user$lim), ""))
+    req(inp$data, user$lim, inp$limiting, user$bin)
     
     df <- inp$data
-    nonlimiting <- setdiff(0:1,values$lim)  # the nonlim, either 0 or 1
+    nonlimiting <- setdiff(user$bin, inp$limiting) %>% tolower()  # the nonlim, either 0 or 1
     heights <- colnames(df)[-1][-1]         # list of heights in the input set
     
-    # (# of clusters at each height)
-    numC <- apply(df[,3:ncol(df)], 2, FUN = n_distinct)
+    numC <- apply(df[,3:ncol(df)], 2, FUN = n_distinct)           # (# of clusters at each height)
     
     # (# clusters with size >= minC, each height)
     numC_above <- apply(df[,3:ncol(df)], 2, FUN = function(x) {
@@ -43,8 +42,10 @@ server <- function(input, output, session) {
     a <- c("Number of clusters","Percent of population in clusters >= "," with 100% or 0% being "," with size >= ")
     user$tbl <- tibble(heights, numC, numC_above) %>% 
       add_column(lim$cl, lim$perc, lim_not$cl, lim_not$perc) %>% 
-      set_colnames(c("Heights", a[1], paste0(a[1], a[4], inp$minC), paste0(a[1], a[4], inp$minC, a[3], values$lim),
-                     paste0(a[2], inp$minC, ",", a[3], values$lim), paste0(a[1], a[4], inp$minC, a[3], nonlimiting), 
+      set_colnames(c("Heights", a[1], paste0(a[1], a[4], inp$minC), 
+                     paste0(a[1], a[4], inp$minC, a[3], tolower(inp$limiting)),
+                     paste0(a[2], inp$minC, ",", a[3], tolower(inp$limiting)), 
+                     paste0(a[1], a[4], inp$minC, a[3], nonlimiting), 
                      paste0(a[2], inp$minC, ",", a[3], nonlimiting)))
     
     introDT <- user$tbl %>% 
@@ -66,7 +67,7 @@ server <- function(input, output, session) {
     req(inp$data, values$locus, input$num_or_prop)
     
     # stats of | Source (0/1) | Frequency in pop. | % of pop. | Type (Neg/Pos) | Size of pop.
-    a1 <- inp$data[,2] %>% binaryStats()
+    a1 <- inp$data[,2] %>% binaryStats(., user$pos, user$neg)
     h <- colnames(inp$data)[3:ncol(inp$data)] # all heights in the dataset
     
     withProgress(message = "Collecting metric data, going through thresholds: ", value = 0, {
@@ -99,7 +100,6 @@ server <- function(input, output, session) {
   
   # When the data has been generated, use dataset size to define plot height
   # Then set up the UI components for the plot, datatable, and download button
-
   source("plots.R", local = TRUE)
   
   # output$plot_exp from explanations.R
@@ -120,13 +120,4 @@ server <- function(input, output, session) {
                     rownames = FALSE, filter = "top", escape = FALSE, selection = "single") %>% 
       formatRound(columns = c(5,8), digits = 4)
   })
-  
-  # # mini explanation - click on a row of the results table to get specifics about the indicated clusters
-  # output$click_results <- renderUI({
-  #   validate(need(!is.null(user$results), ""))
-  #   tagList(
-  #     box(column(12, 
-  #                fluidRow(blurb(type = "ClickRow")), br(), 
-  #                fluidRow(downloadButton("dnld_results", "Download table")))))
-  # })
 }
