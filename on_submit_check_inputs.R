@@ -32,9 +32,11 @@ observeEvent(input$check_validity, {
         # Minimum cluster size not specified.
         need(is.numeric(inp$minC), errMsg(7)))
       
-      errMsg(0)            # Input data formatted correctly
+      # Input data formatted correctly
+      errMsg(0)
     }else {
-      errMsg(5)            # Invalid filetype (onlyaccepts tsv/txt)
+      # Invalid filetype (onlyaccepts tsv/txt)
+      errMsg(5)
     }
   })
   user$bin <- readData(values$path) %>% pull(2) %>% unique()

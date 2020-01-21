@@ -80,7 +80,6 @@ server <- function(input, output, session) {
       }) %>% bind_rows() %>% 
         set_colnames(c("h", "prop.cl", "perc.th", "th.type", "num.cl", "prop.of.data"))
     })
-    
     # selects columns for neg. homogeneity, then renames
     df2 <- tableNames(user$initial, "neg", inp$minC)
     # selects columns for pos. homogeneity, renames, then merges with neg. table
@@ -92,9 +91,9 @@ server <- function(input, output, session) {
 
     # type of plots (y = number of cluster or y = fraction of population)
     user$ptype <- input$num_or_prop
-    
+
     # text blurb indicating user can click on points in plot
-    output$click_limplot <- renderText({blurb(type = "ClickPoint")})
+    # output$click_limplot <- renderText({blurb(type = "ClickPoint")})
     shinyjs::show(id = "facet_ui")
   })
   

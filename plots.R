@@ -7,35 +7,39 @@ output$plot_exp <- renderUI({
   # cn[c(4,3)] == Prop of pop in +'ve homogeneity clusters, +'ve threshold
   # cn[c(6,5)] == Prop of pop in -'ve homogeneity clusters, -'ve threshold
   facet_type <- switch(input$facet_by, 
-                       "Positive" = list(" or more ", cn[c(4,3)], cn[c(6,5)], " or less "), 
-                       "Negative" = list(" or less ", cn[c(6,5)], cn[c(4,3)], " or more ")) %>% unlist()
-  
-  nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
+    "Positive" = list(" or more ", cn[c(4,3)], cn[c(6,5)], " or less "), 
+    "Negative" = list(" or less ", cn[c(6,5)], cn[c(4,3)], " or more ")) %>% unlist()
   
   b1 <- df[1,] %>% pull(facet_type[3]) %>% as.numeric() %>% scales::percent()
   cx <- df %>% pull(facet_type[5]) %>% unique() %>% as.numeric() %>% scales::percent() %>% toString()
+  nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
   
   c(input$facet_by, nottype) %>% tolower() %>% 
     c(., b1, facet_type[1], cx, facet_type[6]) %>% 
     blurb(., "FacetedPlot")
 })
 
-output$limiting_factor <- renderPlotly({
-  req(user$results, user$ptype)
+output$limiting_factor <- renderPlot({
+  req(user$initial, user$ptype)
+  df <- user$initial
   
-  # user input on showing "Number of clusters" or "Fraction of population" along the y-axis, where 
-  # the clusters are those >= minC, with homogeneity at a level specified by the point color
-  df <- (if (user$ptype == "num") c(1:4,6,7) else c(1:3,5,6,8)) %>% 
-    selectColsName(user$results, .) %>% 
-    set_colnames(c("h","prop.cl","perc.th.p","y","perc.th.n","n"))
+  df$h <- as.double(df$h)
+  df$perc.th <- factor(df$perc.th, levels = df$perc.th %>% unique() %>% sort(decreasing = TRUE))
+  df$th.type[df$th.type == "pos"] <- "Positive"
+  df$th.type[df$th.type == "neg"] <- "Negative"
   
-  text1 <- paste0("Height: ", pull(df,1), 
-    "\nNumber of clusters: ", pull(df,2) %>% strsplit(.,"/") %>% map(.,extract2,1) %>% unlist(), 
-    "\nFraction: ", pull(df,4) %>% scales::percent(), "\nRange: ", pull(df,3))
+  text1 <- paste0("Height: ", pull(df,1), "\nNumber of clusters: ", pull(df,5), 
+                  "\nFraction of population: ", pull(df,6) %>% round(digits = 3), 
+                  "\nRange: ", pull(df,3))
   
-  g <- ggplot(df, aes(x = h, y = y, col = perc.th.p)) + 
-    geom_point(aes(text = text1), shape = 3) + geom_line() + xlab("\nHeight") + 
-    scale_color_grey(start = 0.9, end = 0) + theme_bw() + labs(color = "Percent threshold") + 
+  # # user input on showing "Number of clusters" or "Fraction of population" along the y-axis, where 
+  # # the clusters are those >= minC, with homogeneity at a level specified by the point color
+  yval <- if (user$ptype == "num") "num.cl" else "prop.of.data"
+  
+  g <- ggplot(df, aes_string(x = "h", y = yval, color = "perc.th", shape = "th.type")) + 
+    geom_point(aes(text = text1)) + geom_line() + xlab("\nHeight") + theme_bw() + 
+    scale_shape_manual(values = c(20,3), name = "Positive or negative homogeneity") + 
+    scale_color_grey(start = 0, end = 0.9, name = "Percent threshold") + 
     theme(plot.margin = unit(c(1.5,1,2,2), "cm"), 
           axis.title.x.top = element_text(margin = margin(t = 20)), 
           axis.title.y.right = element_text(margin = margin(r = 20)))
@@ -50,16 +54,77 @@ output$limiting_factor <- renderPlotly({
       ggtitle(paste0("Number of homogeneous clusters of size >= ", inp$minC, 
                      ". \n(Limiting factor homogeneity)"))
   }
-    g %>% textSize() %>% 
-      ggplotly(., tooltip = c("text1"), source = "limitplot") %>% 
-      event_register(., "plotly_click")
+  g + theme(strip.text.y = element_text(margin = margin(0,2,0,2)), 
+            strip.text = element_text(size = 14), axis.text.y = element_text(size = 13), 
+            axis.text.x = element_text(size = 13), title = element_text(size = 14), 
+            legend.text = element_text(size = 12))
 })
 
-observeEvent(event_data("plotly_click", source = "limitplot"), {
-  s <- event_data("plotly_click", source = "limitplot")
-  req(user$results, inp$data, length(s))
+output$all_percents <- renderPlotly({
+  req(user$results); req(input$facet_by); req(user$ptype)
+  plot_title <- paste0("Data found in homogeneous clusters of size ", inp$minC, " or larger\n")
   
-  h <- s$x %>% as.character()
+  df <- (if (user$ptype == "num") c(1:4,6,7) else c(1:3,5,6,8)) %>% 
+    selectColsName(user$results, .) %>% 
+    set_colnames(c("h","prop.cl","perc.th.p","p1","perc.th.n","n1"))
+  cn <- colnames(df)
+  
+  ftype <- switch(input$facet_by, 
+                  "Positive" = list(cn[c(4,3)], cn[c(6,5)], "Negative", 3, 20), 
+                  "Negative" = list(cn[c(6,5)], cn[c(4,3)], "Positive", 20, 3)) %>% unlist()
+  
+  text1 <- paste0("Height: ", pull(df,1), "\nFraction: ", pull(df, ftype[1]) %>% scales::percent(), 
+                  "\nRange: ", pull(df, ftype[2]), "\nType: ", input$facet_by)
+  text2 <- paste0("Height: ", pull(df,1), "\nFraction: ", pull(df, ftype[3]) %>% scales::percent(), 
+                  "\nRange: ", pull(df, ftype[4]), "\nType: ", ftype[5])
+  
+  n_cols <- df %>% pull(ftype[4]) %>% unique()
+  df[,ftype[4]] <- pull(df, ftype[4]) %>% factor(., levels = pull(df, ftype[4]) %>% unique() %>% sort(decreasing = TRUE))
+  df[,ftype[2]] <- pull(df, ftype[2]) %>% factor(., levels = pull(df, ftype[2]) %>% unique() %>% sort(decreasing = TRUE))
+  expandedPal <- colorRampPalette(brewer.pal(8, "Set1"))
+  
+  g <- ggplot(df, aes_string(x = "h", y = ftype[1], group = ftype[2])) +
+    geom_point(aes(text = text1),
+               shape = ftype[6], size = 1.5, show.legend = TRUE) +
+    geom_line() +
+    facet_wrap(as.formula(paste0(ftype[2], "~", " ."))) +
+    geom_point(aes_string(x = "h", y = ftype[3], col = ftype[4], text = "text2"),
+               shape = ftype[7], size = 1.5, show.legend = TRUE) +
+    geom_line(aes_string(x = "h", y = ftype[3], col = ftype[4], group = ftype[4])) +
+    scale_color_manual(name = paste0("Legend-\n(", tolower(ftype[5]), ")"),
+                       values = expandedPal(length(n_cols)), labels = n_cols) +
+    theme_bw() + theme(plot.margin = unit(c(1.5,1,1.5,1.5), "cm")) +
+    xlab("\n\nHeight") + ggtitle(plot_title)
+  
+  # g <- ggplot(df, aes_string(x = "h", y = ftype[1], group = ftype[2])) + 
+    # geom_point(aes(text = text1), shape = ftype[6], size = 1.5, show.legend = TRUE) + geom_line() +
+    # facet_wrap(as.formula(paste0(ftype[2], "~", " ."))) + 
+    # geom_point(aes_string(x = "h", y = ftype[3], col = ftype[4], text = "text2"), shape = ftype[7], size = 1.5) +
+    # geom_line(aes_string(x = "h", y = ftype[3], col = ftype[4])) + 
+    # theme_bw() + theme(plot.margin = unit(c(1.5,1,1.5,1.5), "cm")) +
+    # xlab("\n\nHeight") + ggtitle(plot_title)
+  
+  if (user$ptype == "prop") {
+    g <- g + scale_y_continuous(labels = scales::percent, limits = c(0,1)) + 
+      ylab("Fraction of population\n")
+  }else {
+    g <- g + ylab("Number of clusters\n")
+  }
+  g %>% textSize(., incl.legend = TRUE) %>% ggplotly(., tooltip = c("text1","text2"))
+})
+
+output$select_height <- renderUI({
+  req(user$initial, user$ptype)
+  tagList(
+    selectInput("height", "Select height", choices = user$initial$h %>% unique()), 
+    actionButton("specific_h", "Submit")
+  )
+})
+
+observeEvent(input$specific_h, {
+  req(user$results, inp$data, input$height)
+  
+  h <- input$height
   plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
                                "limiting factor in each cluster, at height ", h)
   # group data by clusters at selected h and source, then count freq. of the binary variable
@@ -99,9 +164,11 @@ output$negative_bubble <- renderPlotly({
   num_colors <- toplot$interval %>% unique() %>% length()
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   
-  ggplot(toplot, aes(x = Clusters, y = Fraction, size = Size, color = interval)) + 
-    geom_point() + scale_y_continuous(limits = c(0,1)) + 
-    scale_color_manual(values = color_set) + ggtitle(ptitle)
+  {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) +
+      geom_point() + 
+      geom_point(aes(size = Size), show.legend = FALSE) + 
+      scale_y_continuous(limits = c(0,1)) + ggtitle(ptitle) + 
+      scale_color_manual(name = "Legend", values = color_set)} %>% ggplotly()
 })
 
 output$positive_bubble <- renderPlotly({
@@ -121,82 +188,9 @@ output$positive_bubble <- renderPlotly({
   num_colors <- toplot$interval %>% unique() %>% length()
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   
-  ggplot(toplot, aes(x = Clusters, y = Fraction, size = Size, color = interval)) + 
-    geom_point() + scale_y_continuous(limits = c(0,1)) + 
-    scale_color_manual(values = color_set) + ggtitle(ptitle)
+  {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) +
+      geom_point() + 
+      geom_point(aes(size = Size), show.legend = FALSE) + 
+      scale_y_continuous(limits = c(0,1)) + ggtitle(ptitle) + 
+      scale_color_manual(name = "Legend", values = color_set)} %>% ggplotly()
 })
-
-output$all_percents <- renderPlotly({
-  req(user$results, input$facet_by, user$ptype)
-  
-  plot_title <- paste0("Data found in homogeneous clusters of size ", inp$minC, " or larger\n")
-  
-  df <- (if (user$ptype == "num") c(1:4,6,7) else c(1:3,5,6,8)) %>% 
-    selectColsName(user$results, .) %>% 
-    set_colnames(c("h","prop.cl","perc.th.p","p1","perc.th.n","n1"))
-  cn <- colnames(df)
-  
-  ftype <- switch(input$facet_by, 
-    "Positive" = list(cn[c(4,3)], cn[c(6,5)], "Negative", 3, 20), 
-    "Negative" = list(cn[c(6,5)], cn[c(4,3)], "Positive", 20, 3)) %>% unlist()
-  
-  text1 <- paste0("Height: ", pull(df,1), "\nFraction: ", pull(df, ftype[1]) %>% scales::percent(), 
-                  "\nRange: ", pull(df, ftype[2]), "\nType: ", input$facet_by)
-  text2 <- paste0("Height: ", pull(df,1), "\nFraction: ", pull(df, ftype[3]) %>% scales::percent(), 
-                  "\nRange: ", pull(df, ftype[4]), "\nType: ", ftype[5])
-  
-  g <- ggplot(df, aes_string(x = "h", y = ftype[1], group = ftype[2])) + 
-    geom_point(aes(text = text1), shape = ftype[6], size = 1.5, show.legend = TRUE) + geom_line() +
-    facet_wrap(as.formula(paste0(ftype[2], "~", " ."))) + 
-    geom_point(aes_string(x = "h", y = ftype[3], col = ftype[4], text = "text2"), shape = ftype[7], size = 1.5) +
-    geom_line(aes_string(x = "h", y = ftype[3], col = ftype[4])) + 
-    theme_bw() + theme(plot.margin = unit(c(1.5,1,1.5,1.5), "cm")) +
-    xlab("\n\nHeight") + ggtitle(plot_title)
-  
-  if (user$ptype == "prop") {
-    g <- g + scale_y_continuous(labels = scales::percent, limits = c(0,1)) + 
-      ylab("Fraction of population\n")
-  }else {
-    g <- g + ylab("Number of clusters\n")
-  }
-  g %>% textSize() %>% ggplotly(., tooltip = c("text1","text2"))
-})
-
-# output$nonlimiting_bubble <- renderPlotly({
-#   req(inp$data)
-#   s <- event_data("plotly_click", source = "limitplot")
-#   if (length(s)) {
-#     h <- s$x %>% as.character()
-#     plot_title <- paste0("Clusters not included in the above plot, and the proportion of ",
-#                          "non-limiting factor in each cluster, at height ", h)
-# 
-#     pos_h <- seq(percRhs()/100, 1, by = stepRhs()) # sequence going from right hand side boundary to 1
-#     b <- inp$data[,c(h,"Source")] %>% set_colnames(c("cl","src")) %>% group_by_all() %>% count()
-#     b2 <- aggregate(b$n, by = list(cl = b$cl), FUN = sum) %>% as_tibble() %>%
-#       left_join(b, ., by = "cl") %>% ungroup()
-#     b2$frac <- b2$n/b2$x
-#     impCl <- b2 %>% filter(x >= inp$minC) %>% filter(frac <= pos_h[s$curveNumber + 1])
-# 
-#     # Initially, we have the set of all clusters, b2. A subset of these is what we consider, impCl.
-#     # We want to see what the other clusters look like, with respect to the non-limiting factor.
-#     tmp <- b2[!(b2$cl %in% impCl$cl),] %>% select(cl, x, src, frac) %>%
-#       pivot_wider(names_from = "src", values_from = "frac")
-#     tmp[is.na(tmp)] <- 0
-# 
-#     inds <- colnames(tmp)==values$lim
-#     colnames(tmp)[inds] <- "Limiting"
-#     colnames(tmp)[!inds] <- c("Clusters","Size","Non-limiting")
-# 
-#     tmp$interval <- cut(tmp$`Non-limiting`, breaks = 5)
-#     # tmp <- tmp %>% filter(Size >= inp$minC)
-#     text1 <- paste0("Cluster: ", tmp$Clusters, "\nProportion of cluster: ",
-#                     round(tmp$`Non-limiting`, digits = 3), "\nCluster size: ", tmp$Size)
-# 
-#     {ggplot(tmp, aes(x = Clusters, y = `Non-limiting`, color = interval,
-#                      size = Size, text = text1)) +
-#         geom_point() + ylab("Proportion of cluster with non-limiting factor") +
-#         scale_color_brewer(palette = "Set3") +
-#         ggtitle(plot_title)} %>%
-#       ggplotly(tooltip = "text1")
-#   }
-# })

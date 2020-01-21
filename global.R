@@ -59,15 +59,15 @@ homogeneityTypes <- function(lhs, rhs, stepLhs, stepRhs) {
 homogeneityTables <- function(th, key.cl) {
   lapply(1:nrow(th), function(r) {
     if (th$type[r] == "pos") {
-      key.cl %>% filter(WP >= th$val[r])
+      key.cl %>% filter(WP >= th$val[r]) %>% add_column(type = "Positive")
     }else {
-      key.cl %>% filter(WP <= th$val[r])
+      key.cl %>% filter(WP <= th$val[r]) %>% add_column(type = "Negative")
     }
   }) %>% set_names(th$val) %>% return()
 }
 
-# gene <- "Source"; h <- h[5]; df <- inp.data; minC <- 10; cohort.lim <- 1
-# lhs <- 0.35; rhs <- 0.70; stepLhs <- 0.05; stepRhs <- 0.02
+# gene <- "Source"; h <- '0'; df <- readData("data/FNC_MBS_Example.tsv"); minC <- 10;
+# cohort.lim <- 1; lhs <- 0.35; rhs <- 0.70; stepLhs <- 0.05; stepRhs <- 0.02
 # Full dataset -------------------------------------------------------------------------------
 globalMetrics <- function(gene, h, df, minC, cohort.lim, lhs, rhs, stepLhs, stepRhs) {
   # df of | id | locus (with binary data just for one cohort - the limiting one) | clusters for a single height
@@ -107,15 +107,22 @@ globalMetrics <- function(gene, h, df, minC, cohort.lim, lhs, rhs, stepLhs, step
 }
 
 # Plot details, increasing text size and maneuvering legend to below the plot 
-textSize <- function(p, incl.legend) {
-  p + theme(
-    strip.text.y = element_text(margin = margin(0,2,0,2)), 
-    strip.text = element_text(size = 14), 
-    axis.text.y = element_text(size = 13), 
-    axis.text.x = element_text(size = 13), 
-    title = element_text(size = 14), 
-    legend.position = "bottom", legend.title = element_blank(), 
-    legend.text = element_text(size = 12))
+textSize <- function(p, incl.legend = FALSE) {
+  if (isTRUE(incl.legend)) {
+    p + theme(
+      strip.text.y = element_text(margin = margin(0,2,0,2)), strip.text = element_text(size = 14), 
+      axis.text.y = element_text(size = 13), axis.text.x = element_text(size = 13), 
+      title = element_text(size = 14), legend.position = "bottom", legend.text = element_text(size = 12))
+  }else {
+    p + theme(
+      strip.text.y = element_text(margin = margin(0,2,0,2)), 
+      strip.text = element_text(size = 14), 
+      axis.text.y = element_text(size = 13), 
+      axis.text.x = element_text(size = 13), 
+      title = element_text(size = 14), 
+      legend.position = "bottom", legend.title = element_blank(), 
+      legend.text = element_text(size = 12))
+  }
 }
 
 # Add refined column names to associated plots, e.g. user$results table

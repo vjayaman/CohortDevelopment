@@ -44,38 +44,34 @@ output$click_results <- renderUI({
 # On row click of the final results table, outputs a table of the clusters and specific info at that height
 output$final <- renderDT({
   req(user$results, inp$minC, length(input$results_rows_selected)==1)
+  
   rowX <- user$results[input$results_rows_selected,]    # the selected row
   lim <- inp$limiting
+  h <- rowX$Height
+  df <- inp$data
+  x <- c(percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
   
-  # | Clusters | Source | Size | Fraction of cluster with source | Decimal | Type (pos/neg)
-  df <- inp$data %>% perfClusters(., rowX$Height) %>% ungroup()
-  df$charFrac <- paste0(df$Freq, "/", df$Size)
-  df <- df %>% select(Clusters, Source, Size, charFrac, Fraction) %>% filter(Size >= inp$minC)
-  df$Type <- NA
+  cl.calls <- df %>% select(colnames(df)[1], "Source", h) %>% set_colnames(c("id","locus","clusters"))
+  mets <- cl.calls$clusters %>% unique() %>%
+    lapply(., function(cluster) alleleBinCounts(cl.calls, cluster, lim)) %>% bind_rows()
   
-  # When cluster does not have any of the limiting factor, the row only appears for the nonlimiting 
-  # factor, as a 100% case. In addition, would like to see 0% for the limiting factor
-  tmp <- df[(df$Source != lim) & (df$Fraction == 1),]
-  tmp$Source <- lim
-  tmp$Fraction <- 0
-  tmp$charFrac <- paste0(tmp$Fraction, "/", tmp$Size)
+  tot.size <- sum(mets$size)
+  key.cl <- mets %>% filter(size >= inp$minC)
   
-  # | Clusters | Limiting factor | Cluster size | Prop. of cluster with limiting factor | Decimal | Type
-  df <- rbind(df, tmp) %>% filter(Source == lim)
+  th <- homogeneityTypes(x[1], x[2], x[3], x[4])
+  cl_tbl <- homogeneityTables(th, key.cl)
+  b <- th %>% filter(val %in% rowX[,c("Positive threshold", "Negative threshold")]) %>% as_tibble()
+  b$val <- b$val %>% as.character()
   
-  df$Type[df$Fraction <= rowX$`Negative threshold`] <- "Negative"
-  df$Type[df$Fraction >= rowX$`Positive threshold`] <- "Positive"
-  
-  user$final <- toshow <- df %>% filter(!is.na(Type)) %>% 
-    set_colnames(c("Cluster","Limiting factor","Cluster Size","Proportion","As decimal","Homogeneity type"))
+  user$final <- toshow <- cl_tbl[b$val] %>% bind_rows() %>% select(1,3,2,4,5,6) %>% 
+    set_colnames(c("Cluster","Limiting factor","Size","Proportion","As decimal","Homogeneity type"))
   cnames <- colnames(toshow)
-  
   # factor columns so table filtering will be with selectize, not sliders
   toshow[cnames] <- lapply(toshow[cnames], as.factor)
-
-  asDT(toshow, filter_opt = "top") %>% 
-    formatRound(columns = 5, digits = 4) %>% 
-    formatStyle('Homogeneity type', target = 'row', 
+  
+  asDT(toshow, filter_opt = "top") %>%
+    formatRound(columns = 5, digits = 4) %>%
+    formatStyle('Homogeneity type', target = 'row',
                 backgroundColor = styleEqual(c('Positive','Negative'), c('lightblue','white'))
     )
 })

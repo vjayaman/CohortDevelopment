@@ -9,7 +9,7 @@ output$params <- renderMenu({
 output$param_ui <- renderUI({
   req(inp$data)
   pos_lbl <- paste0("Positive homogeneity (e.g. Consider clusters where >= ", 70, "% is ", tolower(user$pos), "):")
-  neg_lbl <- paste0("Negative homogeneity (e.g. Consider clusters where <= ", 35, "% is ", tolower(user$pos), "):")
+  neg_lbl <- paste0("Negative homogeneity (e.g. Consider clusters where <= ", 30, "% is ", tolower(user$pos), "):")
   tagList(
     fluidRow(
       box(width = 6, 
@@ -34,12 +34,12 @@ output$param_ui <- renderUI({
 
 output$posStepSizeUI <- renderUI({
   req(inp$data)
-  stepSliderInput("step_size_p", 100-percRhs(), 2)
+  stepSliderInput("step_size_p", 100-percRhs(), 10)
 })
 
 output$negStepSizeUI <- renderUI({
   req(inp$data)
-  stepSliderInput("step_size_n", percLhs(), 2)
+  stepSliderInput("step_size_n", percLhs(), 10)
 })
 
 # Modules - homogeneity percent thresholds and step sizes
@@ -48,10 +48,6 @@ stepRhs <- callModule(stepSlider, "step_size_p")
 
 percLhs <- callModule(percSlider, "lhs_perc")
 stepLhs <- callModule(stepSlider, "step_size_n")
-
-# Pick facet variable for plot
-output$facet_ui <- renderUI({
-  radioButtons("facet_by", "Facet by: ", choices = c("Positive", "Negative"))})
 
 # Download button: saves datatable info as "Homogeneity-both-<year>-<month>-<day>-<hours>-<minutes>.txt"
 output$dnld_results <- downloadHandler(

@@ -2,6 +2,7 @@ require(plotly)
 require(shinyWidgets)
 require(shinydashboard)
 require(shinyjs)
+
 sidebar <- dashboardSidebar(
   sidebarMenu(id = "tabs", 
     menuItem("Input data", tabName = "tab-inputs"), 
@@ -44,17 +45,16 @@ body <-   dashboardBody(
       fluidRow(column(width = 10, offset = 1, uiOutput("param_ui"))),
             
       fluidRow(column(width = 10, offset = 1,  
-                      verbatimTextOutput("click_limplot"), 
-                      plotlyOutput("limiting_factor", width = "100%", height = "700px"), 
+                      plotOutput("limiting_factor", width = "100%", height = "800px"), 
+                      box(width = 2, radioButtons("facet_by", "Facet by: ", choices = c("Positive", "Negative"))), 
+                      box(width = 10, uiOutput("plot_exp"), collapsible = TRUE), 
+                      plotlyOutput("all_percents", width = "100%", height = "900px"))), tags$br(), 
+      
+      fluidRow(column(width = 10, offset = 1,  
+                      uiOutput("select_height"), 
                       plotlyOutput("negative_bubble", width = "100%", height = "650px"), 
                       plotlyOutput("positive_bubble", width = "100%", height = "650px"))), tags$br(), 
-      
-      fluidRow(column(width = 10, offset = 1, 
-                      box(width = 2, shinyjs::hidden(uiOutput("facet_ui"))), 
-                      box(width = 10, uiOutput("plot_exp"), collapsible = TRUE))), tags$br(), 
 
-      fluidRow(column(width = 10, offset = 1, 
-                      plotlyOutput("all_percents", width = "100%", height = "800px"))), 
       tags$br(), tags$br(), 
             
       fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("click_results")))), 
