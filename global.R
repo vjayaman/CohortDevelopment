@@ -174,3 +174,8 @@ selectColsName <- function(df, cols) {
   dfx$`Negative threshold` <- as.character(dfx$`Negative threshold`)
   return(dfx)
 }
+
+pointText <- function(df, cols, val) {
+  paste0("Height: ", pull(df,cols[1]), "\nFraction: ", pull(df, cols[2]) %>% scales::percent(), 
+         "\nRange: ", pull(df, cols[3]), "\nType: ", val) %>% return()
+}
