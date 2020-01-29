@@ -47,12 +47,13 @@ output$limiting_factor <- renderPlot({
   df$new <- factor(df$new, levels = df$new %>% unique() %>% sort(decreasing = TRUE))
   
   pal1 <- colorRampPalette(brewer.pal(8, "Set1"))
+  colnames(df) <- gsub("new", "Percent", colnames(df))
   
-  g <- ggplot(df, aes_string(x = "h", y = yval, color = "new", shape = "th.type")) + 
+  g <- ggplot(df, aes_string(x = "h", y = yval, color = "Percent", shape = "th.type")) + 
     geom_point(aes(text = text1), size = 2) + 
     geom_line() + xlab("\nHeight") + theme_bw() + 
     scale_shape_manual(values = c(20,3), name = "Positive or negative homogeneity") + 
-    scale_color_manual(values = pal1(length(unique(df$new)))) + 
+    scale_color_manual(values = pal1(length(unique(df$Percent)))) + 
     theme(plot.margin = unit(c(1.5,1,2,2), "cm"), 
           axis.title.x.top = element_text(margin = margin(t = 20)), 
           axis.title.y.right = element_text(margin = margin(r = 20)))
@@ -185,8 +186,9 @@ output$negative_bubble <- renderPlotly({
   num_colors <- toplot$interval %>% unique() %>% length()
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   
-  {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) + 
-      geom_point() + geom_point(aes(size = Size), show.legend = FALSE) + 
+  {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) +
+      geom_point() + 
+      geom_point(aes(size = Size), show.legend = FALSE) + 
       scale_y_continuous(limits = c(0,1)) + ggtitle(ptitle) + 
       scale_color_manual(name = "Legend", values = color_set)} %>% ggplotly()
 })
@@ -209,7 +211,8 @@ output$positive_bubble <- renderPlotly({
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   
   {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) +
-      geom_point() + geom_point(aes(size = Size), show.legend = FALSE) + 
+      geom_point() + 
+      geom_point(aes(size = Size), show.legend = FALSE) + 
       scale_y_continuous(limits = c(0,1)) + ggtitle(ptitle) + 
       scale_color_manual(name = "Legend", values = color_set)} %>% ggplotly()
 })
