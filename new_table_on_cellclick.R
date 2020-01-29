@@ -45,35 +45,41 @@ output$click_results <- renderUI({
 output$final <- renderDT({
   req(user$results, inp$minC, length(input$results_rows_selected)==1)
   
-  rowX <- user$results[input$results_rows_selected,]    # the selected row
-  lim <- inp$limiting
-  h <- rowX$Height
-  df <- inp$data
-  x <- c(percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
-  
-  cl.calls <- df %>% select(colnames(df)[1], "Source", h) %>% set_colnames(c("id","locus","clusters"))
-  mets <- cl.calls$clusters %>% unique() %>%
-    lapply(., function(cluster) alleleBinCounts(cl.calls, cluster, lim)) %>% bind_rows()
-  
-  tot.size <- sum(mets$size)
-  key.cl <- mets %>% filter(size >= inp$minC)
-  
-  th <- homogeneityTypes(x[1], x[2], x[3], x[4])
-  cl_tbl <- homogeneityTables(th, key.cl)
-  b <- th %>% filter(val %in% rowX[,c("Positive threshold", "Negative threshold")]) %>% as_tibble()
-  b$val <- b$val %>% as.character()
-  
-  user$final <- toshow <- cl_tbl[b$val] %>% bind_rows() %>% select(1,3,2,4,5,6) %>% 
-    set_colnames(c("Cluster","Limiting factor","Size","Proportion","As decimal","Homogeneity type"))
-  cnames <- colnames(toshow)
-  # factor columns so table filtering will be with selectize, not sliders
-  toshow[cnames] <- lapply(toshow[cnames], as.factor)
-  
-  asDT(toshow, filter_opt = "top") %>%
-    formatRound(columns = 5, digits = 4) %>%
-    formatStyle('Homogeneity type', target = 'row',
-                backgroundColor = styleEqual(c('Positive','Negative'), c('lightblue','white'))
-    )
+  withProgress(message = "Generating table of information for selected row: ", value = 0, {
+    
+    incProgress(1/4, detail = "Collecting input data")
+    rowX <- user$results[input$results_rows_selected,]    # the selected row
+    lim <- inp$limiting
+    h <- rowX$Height
+    df <- inp$data
+    x <- c(percLhs()/100, percRhs()/100, stepLhs(), stepRhs())  
+    
+    incProgress(1/4, detail = "Extracting counts")
+    cl.calls <- df %>% select(colnames(df)[1], "Source", h) %>% set_colnames(c("id","locus","clusters"))
+    
+    incProgress(1/4, detail = "Filtering data")
+    mets <- cl.calls$clusters %>% unique() %>%
+      lapply(., function(cluster) alleleBinCounts(cl.calls, cluster, lim)) %>% bind_rows()
+    
+    tot.size <- sum(mets$size)
+    key.cl <- mets %>% filter(size >= inp$minC)
+    th <- homogeneityTypes(x[1], x[2], x[3], x[4])
+    cl_tbl <- homogeneityTables(th, key.cl)
+    b <- th %>% filter(val %in% rowX[,c("Positive threshold", "Negative threshold")]) %>% as_tibble()
+    b$val <- b$val %>% as.character()
+    
+    incProgress(1/5, detail = "Formatting table")
+    user$final <- toshow <- cl_tbl[b$val] %>% bind_rows() %>% select(1,3,2,4,5,6) %>% 
+      set_colnames(c("Cluster","Limiting factor","Size","Proportion","As decimal","Homogeneity type"))
+    cnames <- colnames(toshow)
+    # factor columns so table filtering will be with selectize, not sliders
+    toshow[cnames] <- lapply(toshow[cnames], as.factor)
+    
+    asDT(toshow, filter_opt = "top") %>%
+      formatRound(columns = 5, digits = 4) %>%
+      formatStyle('Homogeneity type', target = 'row',
+                  backgroundColor = styleEqual(c('Positive','Negative'), c('lightblue','white')))  
+  })
 })
 
 # Download button: saves datatable info as "Homogeneity-both-<year>-<month>-<day>-<hours>-<minutes>.txt"

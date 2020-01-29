@@ -1,12 +1,4 @@
 
-# cell$row, cell$col
-# values$locus, values$path
-# user$input, user$results, user$initial, user$plot, user$tbl, user$lim, 
-# user$nonlim, user$ptype, user$final, user$pos, user$neg, user$bin
-# inp$minC, inp$data, inp$type1, inp$type2, inp$limiting
-# plots$bubble_data, plots$bubble_title
-
-
 # The variables that are updated and used throughout the app
 
 # cell$row <- selected height in the first height table on the first ("input") tab

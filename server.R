@@ -96,7 +96,7 @@ server <- function(input, output, session) {
     # output$click_limplot <- renderText({blurb(type = "ClickPoint")})
     shinyjs::show(id = "facet_ui")
   })
-  
+
   # When the data has been generated, use dataset size to define plot height
   # Then set up the UI components for the plot, datatable, and download button
   source("plots.R", local = TRUE)

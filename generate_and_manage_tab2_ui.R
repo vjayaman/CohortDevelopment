@@ -8,8 +8,9 @@ output$params <- renderMenu({
 # Slider inputs and update and download buttons
 output$param_ui <- renderUI({
   req(inp$data)
-  pos_lbl <- paste0("Positive homogeneity (e.g. Consider clusters where >= ", 70, "% is ", tolower(user$pos), "):")
-  neg_lbl <- paste0("Negative homogeneity (e.g. Consider clusters where <= ", 30, "% is ", tolower(user$pos), "):")
+  x <- c("homogeneity", " (e.g. Consider clusters where ", "% is ", "):")
+  pos_lbl <- paste0("Positive ", x[1], x[2], ">= ", 70, x[3], tolower(user$pos), x[4])
+  neg_lbl <- paste0("Negative ", x[1], x[2], "<= ", 30, x[3], tolower(user$pos), x[4])
   tagList(
     fluidRow(
       box(width = 6, 
@@ -18,8 +19,8 @@ output$param_ui <- renderUI({
           percSliderInput("lhs_perc", lbl = neg_lbl, val = 35), uiOutput("negStepSizeUI"))), 
     
     fluidRow(
-      box(width = 6, title = "Positive homogeneity", blurb(type = "PosHExp"), collapsible = TRUE, collapsed = TRUE), 
-      box(width = 6, title = "Negative homogeneity", blurb(type = "NegHExp"), collapsible = TRUE, collapsed = TRUE)), 
+      box(width = 6, title = paste0("Positive ", x[1]), blurb(type = "PosHExp"), collapsible = TRUE, collapsed = TRUE), 
+      box(width = 6, title = paste0("Negative ", x[1]), blurb(type = "NegHExp"), collapsible = TRUE, collapsed = TRUE)), 
     
     fluidRow(
       box(width = 12, 

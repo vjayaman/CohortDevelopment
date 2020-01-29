@@ -1,5 +1,10 @@
 # Brief explanation of the faceted plot on the Parameters tab, describing how the facet 
 # variable is used and how the plot can be interpreted.
+output$facet_by_UI <- renderUI({
+  req(user$plot)
+  box(width = 2, radioButtons("facet_by", "Facet by: ", choices = c("Positive", "Negative")))
+})
+
 output$plot_exp <- renderUI({
   req(user$plot, input$facet_by)
   df <- user$plot
@@ -13,10 +18,11 @@ output$plot_exp <- renderUI({
   b1 <- df[1,] %>% pull(facet_type[3]) %>% as.numeric() %>% scales::percent()
   cx <- df %>% pull(facet_type[5]) %>% unique() %>% as.numeric() %>% scales::percent() %>% toString()
   nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
-  
+
   c(input$facet_by, nottype) %>% tolower() %>% 
     c(., b1, facet_type[1], cx, facet_type[6]) %>% 
-    blurb(., "FacetedPlot")
+    blurb(., "FacetedPlot") %>% 
+    box(width = 10, ., collapsible = TRUE)
 })
 
 output$limiting_factor <- renderPlot({
@@ -47,7 +53,6 @@ output$limiting_factor <- renderPlot({
     geom_line() + xlab("\nHeight") + theme_bw() + 
     scale_shape_manual(values = c(20,3), name = "Positive or negative homogeneity") + 
     scale_color_manual(values = pal1(length(unique(df$new)))) + 
-    # scale_color_grey(start = 0, end = 0.9, name = "Percent threshold") + 
     theme(plot.margin = unit(c(1.5,1,2,2), "cm"), 
           axis.title.x.top = element_text(margin = margin(t = 20)), 
           axis.title.y.right = element_text(margin = margin(r = 20)))
@@ -129,8 +134,10 @@ output$all_percents <- renderPlotly({
 output$select_height <- renderUI({
   req(user$initial, user$ptype)
   tagList(
+    box(width = 12, paste0("Select a height to look at in more detail; to see the composition of the ", 
+                          "clusters that make up the above proportions and cluster numbers.")), 
     selectInput("height", "Select height", choices = user$initial$h %>% unique()), 
-    actionButton("specific_h", "Submit")
+    actionButton("specific_h", "Submit"), tags$br(), tags$br()
   )
 })
 
@@ -178,9 +185,8 @@ output$negative_bubble <- renderPlotly({
   num_colors <- toplot$interval %>% unique() %>% length()
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   
-  {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) +
-      geom_point() + 
-      geom_point(aes(size = Size), show.legend = FALSE) + 
+  {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) + 
+      geom_point() + geom_point(aes(size = Size), show.legend = FALSE) + 
       scale_y_continuous(limits = c(0,1)) + ggtitle(ptitle) + 
       scale_color_manual(name = "Legend", values = color_set)} %>% ggplotly()
 })
@@ -203,8 +209,7 @@ output$positive_bubble <- renderPlotly({
   color_set <- colorRampPalette(brewer.pal(8,"Set3"))(num_colors)
   
   {ggplot(toplot, aes(x = Clusters, y = Fraction, color = interval)) +
-      geom_point() + 
-      geom_point(aes(size = Size), show.legend = FALSE) + 
+      geom_point() + geom_point(aes(size = Size), show.legend = FALSE) + 
       scale_y_continuous(limits = c(0,1)) + ggtitle(ptitle) + 
       scale_color_manual(name = "Legend", values = color_set)} %>% ggplotly()
 })

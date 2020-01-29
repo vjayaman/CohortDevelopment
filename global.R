@@ -115,12 +115,9 @@ textSize <- function(p, incl.legend = FALSE) {
       title = element_text(size = 14), legend.position = "bottom", legend.text = element_text(size = 12))
   }else {
     p + theme(
-      strip.text.y = element_text(margin = margin(0,2,0,2)), 
-      strip.text = element_text(size = 14), 
-      axis.text.y = element_text(size = 13), 
-      axis.text.x = element_text(size = 13), 
-      title = element_text(size = 14), 
-      legend.position = "bottom", legend.title = element_blank(), 
+      strip.text.y = element_text(margin = margin(0,2,0,2)), strip.text = element_text(size = 14), 
+      axis.text.y = element_text(size = 13), axis.text.x = element_text(size = 13), 
+      title = element_text(size = 14), legend.position = "bottom", legend.title = element_blank(), 
       legend.text = element_text(size = 12))
   }
 }
@@ -139,9 +136,9 @@ tableNames <- function(df, type, minC) {
 # Basic as.data.table setup, given a dataframe, center all column elements, 
 # remove filtering unless specified, remove pagination and rownames, and allow y-scrolling
 asDT <- function(df, filter_opt = "none") {
-  DT::datatable(df, options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
-                                   dom = "ti", pageLength = nrow(df), scrollY = "500px"), 
-                rownames = FALSE, filter = filter_opt)
+  DT::datatable(df, rownames = FALSE, filter = filter_opt, 
+                options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
+                               dom = "ti", pageLength = nrow(df), scrollY = "500px"))
 }
 
 perfClusters <- function(df, h) {
@@ -162,13 +159,12 @@ filterPerfect <- function(df, type, minC, perc) {
 }
 
 readData <- function(datapath) {
-  read.table(datapath, header = TRUE, sep = "\t", 
-             check.names = FALSE, stringsAsFactors = FALSE) %>% return()
+  read.table(datapath, header=TRUE, sep="\t", 
+             check.names=FALSE, stringsAsFactors=FALSE) %>% return()
 }
 
 selectColsName <- function(df, cols) {
   dfx <- df %>% select(cols)
-  
   dfx$Height <- as.numeric(dfx$Height)
   dfx$`Positive threshold` <- as.character(dfx$`Positive threshold`)
   dfx$`Negative threshold` <- as.character(dfx$`Negative threshold`)
