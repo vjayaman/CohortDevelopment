@@ -14,11 +14,9 @@ output$plot_exp <- renderUI({
   facet_type <- switch(input$facet_by, 
     "Positive" = list(" or more ", cn[c(4,3)], cn[c(6,5)], " or less "), 
     "Negative" = list(" or less ", cn[c(6,5)], cn[c(4,3)], " or more ")) %>% unlist()
-  
   b1 <- df[1,] %>% pull(facet_type[3]) %>% as.numeric() %>% scales::percent()
   cx <- df %>% pull(facet_type[5]) %>% unique() %>% as.numeric() %>% scales::percent() %>% toString()
   nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
-
   c(input$facet_by, nottype) %>% tolower() %>% 
     c(., b1, facet_type[1], cx, facet_type[6]) %>% 
     blurb(., "FacetedPlot") %>% 
@@ -143,15 +141,15 @@ output$select_height <- renderUI({
 })
 
 observeEvent(input$specific_h, {
-  req(user$results, inp$data, input$height)
+  req(user$results, inp$data, input$height, values$locus)
   
   h <- input$height
   plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
                                "limiting factor in each cluster, at height ", h)
-  # group data by clusters at selected h and source, then count freq. of the binary variable
-  b <- inp$data %>% select(h,"Source") %>%
+  # group data by clusters at selected h and values$locus, then count freq. of the binary variable
+  b <- inp$data %>% select(h,values$locus) %>%
     group_by_all() %>% count() %>%
-    set_colnames(c("Clusters", "Source", "Count"))
+    set_colnames(c("Clusters", values$locus, "Count"))
 
   # add columns of the (1) cluster sizes and (2) fraction of cluster with 0 or 1
   b2 <- aggregate(b$Count, by = list(cl = b$Clusters), FUN = sum) %>% as_tibble() %>%
@@ -160,7 +158,8 @@ observeEvent(input$specific_h, {
   b2$Fraction <- b2$Count/b2$Size
 
   tmp <- b2 %>% filter(Fraction == 1)
-  tmp$Source <- lapply(tmp$Source, function(x) setdiff(user$bin, x)) %>% unlist()
+  types <- tmp %>% pull(values$locus) %>% unique()
+  tmp[,values$locus] <- lapply(tmp %>% pull(get(values$locus)), function(x) setdiff(types, x)) %>% unlist()
   tmp$Count <- 0
   tmp$Fraction <- tmp$Count/tmp$Size
   b2 <- rbind(b2, tmp)
@@ -174,7 +173,7 @@ output$negative_bubble <- renderPlotly({
   # sequence going from 0 to left hand side boundary
   pos_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
   
-  toplot <- plots$bubble_data %>% filter(Source == inp$limiting)
+  toplot <- plots$bubble_data %>% filter(get(values$locus) == inp$limiting)
   
   for (th in pos_h) 
     toplot$interval[toplot$Fraction <= th] <- paste0("<= ", scales::percent(th))
@@ -199,7 +198,7 @@ output$positive_bubble <- renderPlotly({
   # sequence going from right hand side boundary to 1
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
   
-  toplot <- plots$bubble_data %>% filter(Source == inp$limiting)
+  toplot <- plots$bubble_data %>% filter(get(values$locus) == inp$limiting)
   for (th in pos_h) 
     toplot$interval[toplot$Fraction >= th] <- paste0(">= ", scales::percent(th))
   

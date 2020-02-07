@@ -43,7 +43,7 @@ output$click_results <- renderUI({
 
 # On row click of the final results table, outputs a table of the clusters and specific info at that height
 output$final <- renderDT({
-  req(user$results, inp$minC, length(input$results_rows_selected)==1)
+  req(user$results, inp$minC, length(input$results_rows_selected)==1, values$locus)
   
   withProgress(message = "Generating table of information for selected row: ", value = 0, {
     
@@ -55,7 +55,7 @@ output$final <- renderDT({
     x <- c(percLhs()/100, percRhs()/100, stepLhs(), stepRhs())  
     
     incProgress(1/4, detail = "Extracting counts")
-    cl.calls <- df %>% select(colnames(df)[1], "Source", h) %>% set_colnames(c("id","locus","clusters"))
+    cl.calls <- df %>% select(colnames(df)[1], values$locus, h) %>% set_colnames(c("id","locus","clusters"))
     
     incProgress(1/4, detail = "Filtering data")
     mets <- cl.calls$clusters %>% unique() %>%

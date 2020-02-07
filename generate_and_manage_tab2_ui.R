@@ -9,8 +9,8 @@ output$params <- renderMenu({
 output$param_ui <- renderUI({
   req(inp$data)
   x <- c("homogeneity", " (e.g. Consider clusters where ", "% is ", "):")
-  pos_lbl <- paste0("Positive ", x[1], x[2], ">= ", 70, x[3], tolower(user$pos), x[4])
-  neg_lbl <- paste0("Negative ", x[1], x[2], "<= ", 30, x[3], tolower(user$pos), x[4])
+  pos_lbl <- paste0("Positive ", x[1], x[2], ">= ", 70, x[3], tolower(toString(user$pos)), x[4])
+  neg_lbl <- paste0("Negative ", x[1], x[2], "<= ", 30, x[3], tolower(toString(user$pos)), x[4])
   tagList(
     fluidRow(
       box(width = 6, 

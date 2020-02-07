@@ -16,17 +16,28 @@ stepSliderInput <- function(id, maxval, selected = NULL) {
 }
 
 # Base functions -----------------------------------------------------------------------------
+# # Table of: | Bin (0, 1) | Freq (frequency of each in the population) 
+# #           | percent (percent of the population, so Freq/Total) 
+# #           | Type (Negative, Positive) | Total (size of population) | 
+# binaryStats <- function(df.col, pos, neg) {
+#   a1 <- df.col %>% table() %>% as.data.frame() %>% set_colnames(c("Bin","Freq"))
+#   tot <- sum(a1$Freq)
+#   a1$percent <- (a1$Freq/tot) %>% scales::percent()
+#   a1$Type[a1$Bin %in% pos] <- "Positive"
+#   a1$Type[a1$Bin %in% neg] <- "Negative"
+#   a1$Tot <- sum(a1$Freq)
+#   return(a1)
+# }
 # Table of: | Bin (0, 1) | Freq (frequency of each in the population) 
 #           | percent (percent of the population, so Freq/Total) 
 #           | Type (Negative, Positive) | Total (size of population) | 
 binaryStats <- function(df.col, pos, neg) {
-  a1 <- df.col %>% table() %>% as.data.frame() %>% set_colnames(c("Bin","Freq"))
-  tot <- sum(a1$Freq)
-  a1$percent <- (a1$Freq/tot) %>% scales::percent()
-  a1$Type[a1$Bin == pos] <- "Positive"
-  a1$Type[a1$Bin == neg] <- "Negative"
-  a1$Tot <- sum(a1$Freq)
-  return(a1)
+  inds <- df.col %in% pos
+  a1 <- tibble("Bin" = c(toString(pos), toString(neg)), 
+               "Freq" = c(df.col[inds] %>% length(), df.col[!inds] %>% length()))
+  a1 %>% add_column("percent" = (a1$Freq/sum(a1$Freq)) %>% scales::percent()) %>% 
+    add_column("Type" = c("Positive", "Negative")) %>% 
+    add_column(Tot = sum(a1$Freq)) %>% return()
 }
 
 # Table of: | cluster number | cluster size | limiting factor (1 or 0) 
@@ -141,20 +152,21 @@ asDT <- function(df, filter_opt = "none") {
                                dom = "ti", pageLength = nrow(df), scrollY = "500px"))
 }
 
-perfClusters <- function(df, h) {
-  b <- df[,c(h,"Source")] %>% group_by_all() %>% count() %>% set_colnames(c("Clusters","source","num"))
+perfClusters <- function(df, h, source_col) {
+  b <- df[,c(h,source_col)] %>% group_by_all() %>% count() %>% 
+    set_colnames(c("Clusters","source","num"))
   d <- aggregate(b$num, by = list(Clusters = b$Clusters), FUN = sum) %>% as_tibble()
-  b2 <- left_join(b, d, by = "Clusters") %>% set_colnames(c("Clusters","Source","Freq","Size"))
+  b2 <- left_join(b, d, by = "Clusters") %>% set_colnames(c("Clusters",source_col,"Freq","Size"))
   b2$Fraction <- b2$Freq/b2$Size
   return(b2)
 }
 
 # List of tables of | Clusters | Source | Freq | Size | Fraction, one table per height
-filterPerfect <- function(df, type, minC, perc) {
+filterPerfect <- function(df, type, minC, perc, source_col) {
   heights <- colnames(df)[-1][-1]
   lapply(heights, function(h) {
-    perfClusters(df,h) %>% 
-      filter(Source==type & Size>=minC & (Fraction %in% perc))
+    perfClusters(df,h,source_col) %>% 
+      filter((get(source_col) %in% type) & Size>=minC & (Fraction %in% perc))
   }) %>% set_names(heights) %>% return()
 }
 

@@ -21,7 +21,7 @@ observeEvent(input$check_validity, {
         need(!varhandle::check.numeric(colnames(df)[2]), errMsg(2)), 
         
         # The second column data should be binary
-        need(length(unique(pull(df,2)))==2, errMsg(4)), 
+        # need(length(unique(pull(df,2)))==2, errMsg(4)), 
         
         # The first column should be a list of genomes, with a non-numeric heading
         need(!varhandle::check.numeric(colnames(df)[1]), errMsg(3)), 
@@ -40,27 +40,32 @@ observeEvent(input$check_validity, {
     }
   })
   user$bin <- readData(values$path) %>% pull(2) %>% unique()
-  user$pos <- user$bin[1]
-  user$neg <- user$bin[2]
 })
 
 output$posValUI <- renderUI({
-  req(user$bin, length(user$bin)==2)
-  selectizeInput("posV", "Positive value: ", choices = user$bin, selected = setdiff(user$bin, user$neg))
+  req(user$bin)
+  tagList(
+    selectizeInput("posV", "Variable of interest: ", choices = user$bin, multiple = TRUE), 
+    textOutput("negV"), tags$br(), 
+    shinyjs::show("submit")
+  )
 })
 
-output$negValUI <- renderUI({
-  req(user$bin, length(user$bin)==2)
-  tagList(
-    selectizeInput("negV", "Negative value", choices = user$bin, selected = setdiff(user$bin, user$pos)), 
-    # When data has been loaded and validated, enables the "Submit" button
-    shinyjs::show("submit"))
+output$negV <- renderText({
+  negSelect <- setdiff(user$bin, input$posV)
+  if (length(negSelect) == 0 | length(input$posV) == 0) {
+    shinyjs::hide("submit")
+    paste0("\nYou need at least one element of each category to continue.")
+  }else {
+    shinyjs::show("submit")
+    paste0("\nEverything else: ", paste0(negSelect, collapse = ","))
+  }
 })
 
 observe({
-  req(input$posV, input$negV)
-  user$pos <- input$posV
-  user$neg <- input$negV
+  req(user$bin, input$posV)
+  user$pvals <- input$posV
+  user$nvals <- setdiff(user$bin, input$posV)
   inp$data <- NULL
 })
 
@@ -69,7 +74,10 @@ observe({
 observeEvent(input$submit, {
   df <- readData(values$path)
   values$locus <- colnames(df)[2]
-  colnames(df)[2] <- "Source"
+  user$pos <- toString(user$pvals)
+  user$neg <- toString(user$nvals)
+  df[,values$locus] <- pull(df, 2) %>% replace(. %in% user$pvals, user$pos)
+  df[,values$locus] <- pull(df, 2) %>% replace(. %in% user$nvals, user$neg)
   inp$data <- df
 })
 
@@ -83,15 +91,15 @@ output$base_metrics <- renderText({
   lim <- which.min(a1$Freq)
   inp$limiting <- a1$Bin[lim]
   
-  user$lim <- a1$Bin[lim] %>% filterPerfect(inp$data, ., inp$minC, c(0,1))
+  user$lim <- a1$Bin[lim] %>% filterPerfect(inp$data, ., inp$minC, c(0,1), values$locus)
   user$nonlim <- inp$data %>% pull(2) %>% setdiff(., a1$Bin[lim]) %>%
-    filterPerfect(inp$data, ., inp$minC, c(0,1))
+    filterPerfect(inp$data, ., inp$minC, c(0,1), values$locus)
   
   paste0("Dataset size: ", nrow(inp$data), " samples\n", "Number of heights: ", ncol(inp$data)-2, "\n", 
-         "Proportion of binary variable: \n    ", 
-         ap$Type, " (", ap$Bin, "): ", ap$Freq, "/", ap$Tot, " = ", ap$percent, "\n    ", 
-         an$Type, " (", an$Bin, "): ", an$Freq, "/", an$Tot, " = ", an$percent, "\n", 
-         "Limiting factor: ", a1$Type[lim], " (", inp$limiting, ")\n", 
+         "Proportions of binary variable: \n    ", 
+         ap$Bin, ": ", ap$Freq, "/", ap$Tot, " = ", ap$percent, "\n    ", 
+         an$Bin, ": ", an$Freq, "/", an$Tot, " = ", an$percent, "\n", 
+         "Limiting factor: \"", inp$limiting, "\"\n", 
          "We will be maximizing the proportion found \nin binary clusters for the limiting factor.")
 })
 

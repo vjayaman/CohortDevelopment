@@ -15,7 +15,8 @@ server <- function(input, output, session) {
     req(inp$data, user$lim, inp$limiting, user$bin)
     
     df <- inp$data
-    nonlimiting <- setdiff(user$bin, inp$limiting) %>% tolower()  # the nonlim, either 0 or 1
+    nonlimiting <- setdiff(user$bin, strsplit(inp$limiting, ", ", ) %>% unlist()) %>% tolower()
+    # nonlimiting <- setdiff(user$bin, inp$limiting) %>% tolower()  # the nonlim, either 0 or 1
     heights <- colnames(df)[-1][-1]         # list of heights in the input set
     
     numC <- apply(df[,3:ncol(df)], 2, FUN = n_distinct)           # (# of clusters at each height)
@@ -27,7 +28,8 @@ server <- function(input, output, session) {
     # user$lim <- perfect clusters, with 100% being the lim
     # % of pop in perfect clusters >= minC, and the # of such clusters, for lim
     lim <- lapply(heights, function(h) {
-      tibble("perc" = user$lim[[h]]$Size %>% sum() %>% "/"(nrow(df)) %>% round(digits = 3), 
+      tibble("perc" = user$lim[[h]]$Size %>% sum() %>% 
+               "/"(nrow(df)) %>% round(digits = 3), 
              "cl" = user$lim[[h]] %>% nrow())}) %>% bind_rows()
     
     # user$nonlim <- perfect clusters, with 100% being the nonlimiting factor
@@ -40,6 +42,15 @@ server <- function(input, output, session) {
     # | # of clusters >= minC with 100% / 0% lim | % of pop in clusters >= minC, with 100% / 0% lim |
     # | # of clusters >= minC with 100% / 0% non-lim | % of pop in clusters >= minC, with 100% / 0% non-lim |
     a <- c("Number of clusters","Percent of population in clusters >= "," with 100% or 0% being "," with size >= ")
+    b1 <- tibble(heights, numC, numC_above)
+    b2 <- b1 %>% add_column(lim$cl, lim$perc, lim_not$cl, lim_not$perc)
+    # saveRDS(b2, "b2.Rds")
+    b3 <- b2 %>% set_colnames(c("Heights", a[1], paste0(a[1], a[4], inp$minC), 
+                     paste0(a[1], a[4], inp$minC, a[3], tolower(inp$limiting)),
+                     paste0(a[2], inp$minC, ",", a[3], tolower(inp$limiting)), 
+                     paste0(a[1], a[4], inp$minC, a[3], nonlimiting), 
+                     paste0(a[2], inp$minC, ",", a[3], nonlimiting)))
+    
     user$tbl <- tibble(heights, numC, numC_above) %>% 
       add_column(lim$cl, lim$perc, lim_not$cl, lim_not$perc) %>% 
       set_colnames(c("Heights", a[1], paste0(a[1], a[4], inp$minC), 
@@ -65,11 +76,10 @@ server <- function(input, output, session) {
   # On "update" button-click, uses user inputs to generate the proportions and relevant data
   observeEvent(input$update, {
     req(inp$data, values$locus, input$num_or_prop)
-    
     # stats of | Source (0/1) | Frequency in pop. | % of pop. | Type (Neg/Pos) | Size of pop.
     a1 <- inp$data[,2] %>% binaryStats(., user$pos, user$neg)
     h <- colnames(inp$data)[3:ncol(inp$data)] # all heights in the dataset
-    
+
     withProgress(message = "Collecting metric data, going through thresholds: ", value = 0, {
       user$initial <-lapply(1:length(h), function(i) {
         incProgress(1/length(h), 
@@ -115,7 +125,7 @@ server <- function(input, output, session) {
     #https://stackoverflow.com/questions/33180058/coerce-multiple-columns-to-factors-at-once
     tableX %>% 
       DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
-                                       dom = "ti", pageLength = nrow(df), scrollY = "500px"), 
+                                       dom = "ti", pageLength = nrow(tableX), scrollY = "500px"), 
                     rownames = FALSE, filter = "top", escape = FALSE, selection = "single") %>% 
       formatRound(columns = c(5,8), digits = 4)
   })
