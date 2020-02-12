@@ -13,57 +13,54 @@ server <- function(input, output, session) {
   ## Datatable of heights and number of clusters for each
   output$num_clusters <- renderDT({
     req(inp$data, user$lim, inp$limiting, user$bin)
+    # user$lim <- perfect clusters, with 100% being the lim
+    # inp_limiting <- a1$Bin[which.min(a1$Freq)]
     
     df <- inp$data
-    nonlimiting <- setdiff(user$bin, strsplit(inp$limiting, ", ", ) %>% unlist()) %>% tolower()
-    # nonlimiting <- setdiff(user$bin, inp$limiting) %>% tolower()  # the nonlim, either 0 or 1
     heights <- colnames(df)[-1][-1]         # list of heights in the input set
-    
     numC <- apply(df[,3:ncol(df)], 2, FUN = n_distinct)           # (# of clusters at each height)
     
     # (# clusters with size >= minC, each height)
     numC_above <- apply(df[,3:ncol(df)], 2, FUN = function(x) {
       table(x) %>% as.data.frame() %>% filter(Freq >= inp$minC) %>% nrow()})  
     
-    # user$lim <- perfect clusters, with 100% being the lim
     # % of pop in perfect clusters >= minC, and the # of such clusters, for lim
+    # userlim <- inp_limiting %>% filterPerfect(inpdata, ., minC, c(0,1), "Var")
     lim <- lapply(heights, function(h) {
-      tibble("perc" = user$lim[[h]]$Size %>% sum() %>% 
-               "/"(nrow(df)) %>% round(digits = 3), 
-             "cl" = user$lim[[h]] %>% nrow())}) %>% bind_rows()
+      df_x <- user$lim[[h]]
+      inds_100 <- df_x$Size[which(df_x$Fraction == 1)]
+      isolates <- sum(inds_100)
+      tibble("heights" = h, "cl_100" = length(inds_100), 
+        "props_100" = paste0(isolates, "/", nrow(df)), 
+        "perc_100" = (isolates / nrow(df)) %>% percent(accuracy = 0.01) )
+    }) %>% bind_rows()
     
-    # user$nonlim <- perfect clusters, with 100% being the nonlimiting factor
-    # % of pop in perfect clusters >= minC, and the # of such clusters, for nonlim
-    lim_not <- lapply(heights, function(h) {
-      tibble("perc" = user$nonlim[[h]]$Size %>% sum() %>% "/"(nrow(df)) %>% round(digits = 3), 
-             "cl" = user$nonlim[[h]] %>% nrow())}) %>% bind_rows()
-    
-    # summary table, with Heights | # of clusters | # of clusters with size >= minC |
-    # | # of clusters >= minC with 100% / 0% lim | % of pop in clusters >= minC, with 100% / 0% lim |
-    # | # of clusters >= minC with 100% / 0% non-lim | % of pop in clusters >= minC, with 100% / 0% non-lim |
-    a <- c("Number of clusters","Percent of population in clusters >= "," with 100% or 0% being "," with size >= ")
+    # summary table
+    a <- c(paste0("Number of clusters with size >= ", inp$minC), 
+           paste0("Proportion of population in clusters >= ", inp$minC, " with"), 
+           paste0("Percent of population in clusters >= ", inp$minC, " with"), 
+           tolower(inp$limiting))
     b1 <- tibble(heights, numC, numC_above)
-    b2 <- b1 %>% add_column(lim$cl, lim$perc, lim_not$cl, lim_not$perc)
-    # saveRDS(b2, "b2.Rds")
-    b3 <- b2 %>% set_colnames(c("Heights", a[1], paste0(a[1], a[4], inp$minC), 
-                     paste0(a[1], a[4], inp$minC, a[3], tolower(inp$limiting)),
-                     paste0(a[2], inp$minC, ",", a[3], tolower(inp$limiting)), 
-                     paste0(a[1], a[4], inp$minC, a[3], nonlimiting), 
-                     paste0(a[2], inp$minC, ",", a[3], nonlimiting)))
+    user$tbl <- b2 <- left_join(b1, lim, by = "heights") %>% 
+      set_colnames(c("Heights", "Number of clusters", a[1], paste0(a[1], " with 100 % ", a[4]),
+                     paste0(a[2], " 100 % ", a[4]), paste0(a[3], " 100 % ", a[4])))
     
-    user$tbl <- tibble(heights, numC, numC_above) %>% 
-      add_column(lim$cl, lim$perc, lim_not$cl, lim_not$perc) %>% 
-      set_colnames(c("Heights", a[1], paste0(a[1], a[4], inp$minC), 
-                     paste0(a[1], a[4], inp$minC, a[3], tolower(inp$limiting)),
-                     paste0(a[2], inp$minC, ",", a[3], tolower(inp$limiting)), 
-                     paste0(a[1], a[4], inp$minC, a[3], nonlimiting), 
-                     paste0(a[2], inp$minC, ",", a[3], nonlimiting)))
+    sketch = htmltools::withTags(table(
+      class = 'display', 
+      thead(
+        tr(th(colspan = 3, "General"), th(colspan = 3, "Clusters with size >= 10")), 
+        tr(lapply(c("Height", "Number of clusters", 
+            paste0("Number of clusters with size >= ", inp$minC), 
+            paste0("Number of clusters with 100 % ", tolower(inp$limiting)), 
+            paste0("Proportion of population in clusters with 100 % ", tolower(inp$limiting)), 
+            paste0("Percent of population in clusters with 100 % ", tolower(inp$limiting))), th))
+    )))
     
-    introDT <- user$tbl %>% 
-      DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
-                                   dom = "ti", pageLength = nrow(df), scrollY = "500px"), 
-                    rownames = FALSE, filter = 'none', selection = list(target = "cell", mode = "single")) %>% 
-      formatStyle(3:7, border = '1px solid #ddd')
+    DT::datatable(b2, options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
+                                     dom = "ti", pageLength = nrow(b2), scrollY = "500px"), 
+                  rownames = FALSE, filter = "none", container = sketch, class = 'cell-border stripe', 
+                  selection = list(target = "cell", mode = "single")) %>% 
+      formatStyle(3:5, border = '1px solid #ddd')
   })
   
   # Mini table of cluster sizes

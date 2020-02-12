@@ -12,24 +12,21 @@ output$click_cells <- renderUI({
 # with the number selected in the main table
 output$cluster_info <- renderDT({
   req(inp$data, user$tbl, length(input$num_clusters_cell_clicked)>0)
-  
   clicked <- input$num_clusters_cell_clicked
-  if (clicked$col %in% c(2:6)) {
-    cell$col <- clicked$col + 1         # cell$row/col is NULL otherwise
-    cell$row <- clicked$row
-  }
-  h <- user$tbl$Heights[cell$row]
-
-  if (clicked$col %in% c(3,4)) {        # column of limiting factor selected
-    user$lim[[h]] %>% ungroup() %>% select(Clusters,Size) %>% asDT()
+  h <- user$tbl$Heights[clicked$row]
+  
+  if (clicked$col %in% 0:1) {
+    a <- inp$data %>% pull(h) %>% table() %>% as_tibble() %>% 
+      set_colnames(c("Cluster number","Size"))
+    a[order(a$Size, decreasing = TRUE),] %>% asDT()
     
-  }else if (clicked$col %in% c(5,6)) {  # column of nonlimiting factor selected
-    user$nonlim[[h]] %>% ungroup() %>% select(Clusters,Size) %>% asDT()
+  }else if (clicked$col == 2) {
+    inp$data %>% pull(h) %>% table() %>% as_tibble() %>% 
+      filter(n >= inp$minC) %>% set_colnames(c("Cluster number","Size")) %>% asDT()
     
-  }else if (clicked$col == 2) {         # number of clusters with size >= minC
-    inp$data %>% pull(h) %>% table() %>% as.data.frame() %>% 
-      filter(Freq >= inp$minC) %>% 
-      set_colnames(c("Clusters","Size")) %>% asDT()
+  }else {
+    user$lim[[h]] %>% ungroup() %>% select(Clusters,Size,Var) %>% 
+      set_colnames(c("Cluster number", "Size", "100% ___")) %>% asDT()
   }
 })
 

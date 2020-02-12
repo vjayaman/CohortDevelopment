@@ -95,11 +95,13 @@ output$base_metrics <- renderText({
   user$nonlim <- inp$data %>% pull(2) %>% setdiff(., a1$Bin[lim]) %>%
     filterPerfect(inp$data, ., inp$minC, c(0,1), values$locus)
   
-  paste0("Dataset size: ", nrow(inp$data), " samples\n", "Number of heights: ", ncol(inp$data)-2, "\n", 
-         "Proportions of binary variable: \n    ", 
-         ap$Bin, ": ", ap$Freq, "/", ap$Tot, " = ", ap$percent, "\n    ", 
-         an$Bin, ": ", an$Freq, "/", an$Tot, " = ", an$percent, "\n", 
-         "Limiting factor: \"", inp$limiting, "\"\n", 
-         "We will be maximizing the proportion found \nin binary clusters for the limiting factor.")
+  basic$data <- paste0(
+    "Dataset size: ", nrow(inp$data), " samples\n", 
+    "Number of heights: ", ncol(inp$data)-2, "\n", 
+    "Proportions of binary variable: \n    ", 
+    ap$Bin, ": ", ap$Freq, "/", ap$Tot, " = ", ap$percent, "\n    ", 
+    an$Bin, ": ", an$Freq, "/", an$Tot, " = ", an$percent, "\n", 
+    "Limiting factor: \"", inp$limiting, "\"\n", 
+    "We will be maximizing the proportion found \nin binary clusters for the limiting factor.")
 })
 

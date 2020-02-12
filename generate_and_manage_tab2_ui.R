@@ -8,15 +8,19 @@ output$params <- renderMenu({
 # Slider inputs and update and download buttons
 output$param_ui <- renderUI({
   req(inp$data)
-  x <- c("homogeneity", " (e.g. Consider clusters where ", "% is ", "):")
-  pos_lbl <- paste0("Positive ", x[1], x[2], ">= ", 70, x[3], tolower(toString(user$pos)), x[4])
-  neg_lbl <- paste0("Negative ", x[1], x[2], "<= ", 30, x[3], tolower(toString(user$pos)), x[4])
+  # x <- c("homogeneity", " (e.g. Consider clusters where ", "% is ", "):")
+  # pos_lbl <- paste0("Positive ", x[1], x[2], ">= ", 70, x[3], tolower(toString(user$pos)), x[4])
+  # neg_lbl <- paste0("Negative ", x[1], x[2], "<= ", 30, x[3], tolower(toString(user$pos)), x[4])
+  pos_lbl <- paste0("Variable of interest >= ___  (e.g. >= 70%)")
+  neg_lbl <- paste0("Variable of interest <= ___  (e.g. <= 30%)")
   tagList(
     fluidRow(
-      box(width = 6, 
+      box(width = 4, 
           percSliderInput("rhs_perc", lbl = pos_lbl, val = 70), uiOutput("posStepSizeUI")), 
-      box(width = 6, 
-          percSliderInput("lhs_perc", lbl = neg_lbl, val = 35), uiOutput("negStepSizeUI"))), 
+      box(width = 4, 
+          percSliderInput("lhs_perc", lbl = neg_lbl, val = 35), uiOutput("negStepSizeUI")), 
+      verbatimTextOutput("data_summary", placeholder = TRUE)
+      ), 
     
     fluidRow(
       box(width = 6, title = paste0("Positive ", x[1]), blurb(type = "PosHExp"), collapsible = TRUE, collapsed = TRUE), 
@@ -33,6 +37,10 @@ output$param_ui <- renderUI({
   )
 })
 
+output$data_summary <- renderText({
+  req(basic$data)
+  paste0(basic$data)
+})
 output$posStepSizeUI <- renderUI({
   req(inp$data)
   stepSliderInput("step_size_p", 100-percRhs(), 10)
