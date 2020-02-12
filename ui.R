@@ -28,7 +28,6 @@ body <-   dashboardBody(
                           actionButton("check_validity", "Check input validity", style = "font-size: 16px;")),
                    column(width = 3, 
                           shinyjs::useShinyjs(),
-                          # uiOutput("var_of_int"), 
                           uiOutput("posValUI"), 
                           hidden(actionButton("submit", "Submit", style = "font-size: 16px;"))),
                    column(width = 4,
