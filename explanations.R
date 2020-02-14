@@ -33,8 +33,8 @@ blurb <- function(a = NULL, type) {
            "where \n", a[5], a[6], "of the cluster has the limiting factor.") %>% p() %>% return()
     
   }else if (type == "ClickCell") {
-    paste0("Each of the outlined cells in the table below indicate a number of clusters. Selecting one ", 
-           "of these cells results in a table of the corresponding clusters and their respective sizes.") %>% 
+    paste0("Selecting one of the cells in the table below results in a table ", 
+           "of the corresponding clusters and their respective sizes.") %>% 
       p() %>% return()
     
   }else if (type == "ClickPoint") {

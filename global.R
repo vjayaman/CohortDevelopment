@@ -1,6 +1,7 @@
 x <- c('shiny','magrittr', 'tibble','dplyr','ggplot2','reshape2', 
        'data.table','DT','RColorBrewer','tidyr','plotly','purrr', 
-       'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales')
+       'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales', 
+       'relayer')
 lapply(x, require, character.only = TRUE)
 
 # Modular inputs -----------------------------------------------------------------------------
@@ -186,4 +187,9 @@ selectColsName <- function(df, cols) {
 pointText <- function(df, cols, val) {
   paste0("Height: ", pull(df,cols[1]), "\nFraction: ", pull(df, cols[2]) %>% scales::percent(), 
          "\nRange: ", pull(df, cols[3]), "\nType: ", val) %>% return()
+}
+
+scale_manual <- function(aesthetics, values, name, ...) {
+  scale_color_manual(
+    aesthetics = aesthetics, values = values, name = name, ...)
 }

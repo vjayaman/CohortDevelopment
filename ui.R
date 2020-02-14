@@ -47,9 +47,11 @@ body <-   dashboardBody(
       fluidRow(column(width = 10, offset = 1,  
                       plotOutput("limiting_factor", width = "100%", height = "800px"), 
                       tags$br(), tags$br(), 
-                      uiOutput("facet_by_UI"), uiOutput("plot_exp"), 
-                      tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), 
-                      plotlyOutput("all_percents", width = "100%", height = "900px"))), tags$br(), 
+                      # uiOutput("facet_by_UI"), 
+                      uiOutput("plot_exp")#, 
+                      # tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), 
+                      # plotlyOutput("all_percents", width = "100%", height = "900px")
+                      )), tags$br(), 
       
       fluidRow(column(width = 10, offset = 1,  
                       uiOutput("select_height"), 

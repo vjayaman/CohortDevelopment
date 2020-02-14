@@ -1,27 +1,27 @@
 # Brief explanation of the faceted plot on the Parameters tab, describing how the facet 
 # variable is used and how the plot can be interpreted.
-output$facet_by_UI <- renderUI({
-  req(user$plot)
-  box(width = 2, radioButtons("facet_by", "Facet by: ", choices = c("Positive", "Negative")))
-})
+# output$facet_by_UI <- renderUI({
+#   req(user$plot)
+#   box(width = 2, radioButtons("facet_by", "Facet by: ", choices = c("Positive", "Negative")))
+# })
 
-output$plot_exp <- renderUI({
-  req(user$plot, input$facet_by)
-  df <- user$plot
-  cn <- colnames(df)
-  # cn[c(4,3)] == Prop of pop in +'ve homogeneity clusters, +'ve threshold
-  # cn[c(6,5)] == Prop of pop in -'ve homogeneity clusters, -'ve threshold
-  facet_type <- switch(input$facet_by, 
-    "Positive" = list(" or more ", cn[c(4,3)], cn[c(6,5)], " or less "), 
-    "Negative" = list(" or less ", cn[c(6,5)], cn[c(4,3)], " or more ")) %>% unlist()
-  b1 <- df[1,] %>% pull(facet_type[3]) %>% as.numeric() %>% scales::percent()
-  cx <- df %>% pull(facet_type[5]) %>% unique() %>% as.numeric() %>% scales::percent() %>% toString()
-  nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
-  c(input$facet_by, nottype) %>% tolower() %>% 
-    c(., b1, facet_type[1], cx, facet_type[6]) %>% 
-    blurb(., "FacetedPlot") %>% 
-    box(width = 10, ., collapsible = TRUE)
-})
+# output$plot_exp <- renderUI({
+#   req(user$plot, input$facet_by)
+#   df <- user$plot
+#   cn <- colnames(df)
+#   # cn[c(4,3)] == Prop of pop in +'ve homogeneity clusters, +'ve threshold
+#   # cn[c(6,5)] == Prop of pop in -'ve homogeneity clusters, -'ve threshold
+#   facet_type <- switch(input$facet_by, 
+#     "Positive" = list(" or more ", cn[c(4,3)], cn[c(6,5)], " or less "), 
+#     "Negative" = list(" or less ", cn[c(6,5)], cn[c(4,3)], " or more ")) %>% unlist()
+#   b1 <- df[1,] %>% pull(facet_type[3]) %>% as.numeric() %>% scales::percent()
+#   cx <- df %>% pull(facet_type[5]) %>% unique() %>% as.numeric() %>% scales::percent() %>% toString()
+#   nottype <- c("Positive", "Negative") %>% setdiff(., input$facet_by)
+#   c(input$facet_by, nottype) %>% tolower() %>% 
+#     c(., b1, facet_type[1], cx, facet_type[6]) %>% 
+#     blurb(., "FacetedPlot") %>% 
+#     box(width = 10, ., collapsible = TRUE)
+# })
 
 output$limiting_factor <- renderPlot({
   req(user$initial, user$ptype)
@@ -44,27 +44,46 @@ output$limiting_factor <- renderPlot({
   df$new[df$th.type=="Negative"] <- paste0("<= ", df$perc.th[df$th.type=="Negative"])
   df$new <- factor(df$new, levels = df$new %>% unique() %>% sort(decreasing = TRUE))
   
-  pal1 <- colorRampPalette(brewer.pal(8, "Set1"))
+  
+  pos <- c("#fff5f0", "#fee0d2", "#fcbba1", "#fc9272", "#fb6a4a", 
+           "#ef3b2c", "#cb181d", "#a50f15", "#67000d") %>% rev() %>% colorRampPalette(.)
+  neg <- c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6", 
+           "#4292c6", "#2171b5", "#08519c", "#08306b") %>% colorRampPalette(.)
   colnames(df) <- gsub("new", "Percent", colnames(df))
   
-  g <- ggplot(df, aes_string(x = "h", y = yval, color = "Percent", shape = "th.type")) + 
-    geom_point(aes(text = text1), size = 2) + 
-    geom_line() + xlab("\nHeight") + theme_bw() + 
-    scale_shape_manual(values = c(20,3), name = "Positive or negative homogeneity") + 
-    scale_color_manual(values = pal1(length(unique(df$Percent)))) + 
-    theme(plot.margin = unit(c(1.5,1,2,2), "cm"), 
-          axis.title.x.top = element_text(margin = margin(t = 20)), 
-          axis.title.y.right = element_text(margin = margin(r = 20)))
+  p1 <- unique(df$Percent[df$th.type=="Positive"]) %>% length()
+  n1 <- unique(df$Percent[df$th.type=="Negative"]) %>% length()
+  
+  df$pretty_perc <- df$perc.th %>% as.character() %>% as.numeric() %>% percent()
+  df$pretty_perc <- factor(df$pretty_perc, levels = df$pretty_perc[order(df$perc.th)] %>% unique())
+  df_pos <- filter(df, th.type == "Positive")
+  df_neg <- filter(df, th.type == "Negative")
+  
+  g <- ggplot(mapping = aes_string(x = "h", y = yval, group = "Percent")) +
+    (geom_point(data = df_pos, aes(c1 = pretty_perc), shape = 3) %>%
+       rename_geom_aes(new_aes = c("colour" = "c1"))) +
+    (geom_line(data = df_pos, aes(c2 = pretty_perc)) %>%
+       rename_geom_aes(new_aes = c("colour" = "c2"))) +
+    (geom_point(data = df_neg, aes(c3 = pretty_perc), shape = 20) %>%
+       rename_geom_aes(new_aes = c("colour" = "c3"))) +
+    (geom_line(data = df_neg, aes(c4 = pretty_perc)) %>%
+       rename_geom_aes(new_aes = c("colour" = "c4"))) +
+    scale_manual("c1", pos(p1), "Positive") + scale_manual("c2", pos(p1), "Positive") + 
+    scale_manual("c3", neg(n1), "Negative") + scale_manual("c4", neg(n1), "Negative") + 
+    theme_bw() + theme(legend.position = "right") + 
+    xlab("\nHeight") + theme_bw() + 
+    guides(color = guide_legend(ncol = 2))
   
   if (user$ptype == "prop") {
     g <- g + ylab("Fraction of population\n") + 
-      scale_y_continuous(labels = percent, limits = c(0,1)) + 
+      scale_y_continuous(labels = percent, limits = c(0,1), breaks = pretty(0:1, n = 20)) + 
       ggtitle(paste0("Proportion of population in homogeneous clusters of size >= ", 
                      inp$minC, ". \n(Limiting factor homogeneity)"))
   }else {
     g <- g + ylab("Number of clusters\n") + 
       ggtitle(paste0("Number of homogeneous clusters of size >= ", inp$minC, 
-                     ". \n(Limiting factor homogeneity)"))
+                     ". \n(Limiting factor homogeneity)")) + 
+      scale_y_continuous(breaks = pretty(1:max(df$num.cl), n = max(round(max(df$num.cl)/10), 10)))
   }
   x <- 16
   g + theme(strip.text.y = element_text(margin = margin(0,2,0,2)), 
@@ -74,61 +93,61 @@ output$limiting_factor <- renderPlot({
 })
 
 
-output$all_percents <- renderPlotly({
-  req(user$results); req(input$facet_by); req(user$ptype)
-
-  plot_title <- paste0("Data found in homogeneous clusters of size ", inp$minC, " or larger\n")
-  expandedPal <- colorRampPalette(brewer.pal(8, "Set1"))
-
-  pt <- switch (user$ptype,
-                "num" = c("num", "Number of clusters\n"),
-                "prop" = c("wp", "Fraction of population"))
-  
-  x <- c("positive", "negative")
-  ft <- switch(input$facet_by, 
-               "Positive" = c(x[1], x[2], 3, 1), 
-               "Negative" = c(x[2], x[1], 1, 3))
-  
-  cn <- c("h","prop.cl.size","type","th","num","wp")
-  a1 <- user$results[,1:5] %>% add_column(type="positive", .before=3) %>% set_colnames(cn)
-  a1$new <- paste0(">= ", a1$th)
-  a2 <- user$results[,c(1:2,6:8)] %>% add_column(type="negative", .before=3) %>% set_colnames(cn)
-  a2$new <- paste0("<= ", a2$th)
-  
-  df <- bind_rows(a1, a2)
-  df$h <- as.integer(df$h)
-  df$th <- factor(df$th, levels = df$th %>% unique() %>% sort(decreasing = TRUE))
-  df$new <- factor(df$new, levels = df$new %>% unique() %>% sort(decreasing = TRUE))
-  n_cols <- df$new %>% unique()
-  
-  df1 <- df[df$type == ft[1],]
-  text1 <- pointText(df1, c(1,6,4), input$facet_by)
-  
-  g <- ggplot() + 
-    geom_point(data = df1, shape = ft[3], size = 1.5, 
-               aes_string(x = "h", y = pt[1], group = "th", text = "text1")) + 
-    geom_line(data = df1, aes_string(x = "h", y = pt[1], group = "th")) + 
-    facet_wrap( ~ df1$th)
-  
-  df2 <- df[df$type == ft[2],]
-  text2 <- pointText(df2, c(1,6,4), input$facet_by)
-  
-  g <- g + geom_point(data = df2, shape = ft[4], size = 1.5, 
-                      aes_string(x = "h", y = pt[1], col = "new", text = "text2")) + 
-    geom_line(data = df2, aes_string(x = "h", y = pt[1], col = "new")) + 
-    scale_color_manual(name = "Legend", 
-                       values = expandedPal(length(n_cols)), 
-                       labels = rev(n_cols))
-  
-  g <- g + theme_bw() + 
-    theme(plot.margin = unit(c(1.5, 1, 1.5, 1.5), "cm")) + 
-    ylab(pt[2]) + xlab("\n\nHeight") + ggtitle(plot_title)
-  
-  if (user$ptype == "prop") {
-    g <- g + scale_y_continuous(labels = scales::percent, limits = c(0,1))
-  }
-  g %>% textSize(., incl.legend = TRUE) %>% ggplotly(., tooltip = c("text1", "text2"))
-})
+# output$all_percents <- renderPlotly({
+#   req(user$results); req(input$facet_by); req(user$ptype)
+# 
+#   plot_title <- paste0("Data found in homogeneous clusters of size ", inp$minC, " or larger\n")
+#   expandedPal <- colorRampPalette(brewer.pal(8, "Set1"))
+# 
+#   pt <- switch (user$ptype,
+#                 "num" = c("num", "Number of clusters\n"),
+#                 "prop" = c("wp", "Fraction of population"))
+#   
+#   x <- c("positive", "negative")
+#   ft <- switch(input$facet_by, 
+#                "Positive" = c(x[1], x[2], 3, 1), 
+#                "Negative" = c(x[2], x[1], 1, 3))
+#   
+#   cn <- c("h","prop.cl.size","type","th","num","wp")
+#   a1 <- user$results[,1:5] %>% add_column(type="positive", .before=3) %>% set_colnames(cn)
+#   a1$new <- paste0(">= ", a1$th)
+#   a2 <- user$results[,c(1:2,6:8)] %>% add_column(type="negative", .before=3) %>% set_colnames(cn)
+#   a2$new <- paste0("<= ", a2$th)
+#   
+#   df <- bind_rows(a1, a2)
+#   df$h <- as.integer(df$h)
+#   df$th <- factor(df$th, levels = df$th %>% unique() %>% sort(decreasing = TRUE))
+#   df$new <- factor(df$new, levels = df$new %>% unique() %>% sort(decreasing = TRUE))
+#   n_cols <- df$new %>% unique()
+#   
+#   df1 <- df[df$type == ft[1],]
+#   text1 <- pointText(df1, c(1,6,4), input$facet_by)
+#   
+#   g <- ggplot() + 
+#     geom_point(data = df1, shape = ft[3], size = 1.5, 
+#                aes_string(x = "h", y = pt[1], group = "th", text = "text1")) + 
+#     geom_line(data = df1, aes_string(x = "h", y = pt[1], group = "th")) + 
+#     facet_wrap( ~ df1$th)
+#   
+#   df2 <- df[df$type == ft[2],]
+#   text2 <- pointText(df2, c(1,6,4), input$facet_by)
+#   
+#   g <- g + geom_point(data = df2, shape = ft[4], size = 1.5, 
+#                       aes_string(x = "h", y = pt[1], col = "new", text = "text2")) + 
+#     geom_line(data = df2, aes_string(x = "h", y = pt[1], col = "new")) + 
+#     scale_color_manual(name = "Legend", 
+#                        values = expandedPal(length(n_cols)), 
+#                        labels = rev(n_cols))
+#   
+#   g <- g + theme_bw() + 
+#     theme(plot.margin = unit(c(1.5, 1, 1.5, 1.5), "cm")) + 
+#     ylab(pt[2]) + xlab("\n\nHeight") + ggtitle(plot_title)
+#   
+#   if (user$ptype == "prop") {
+#     g <- g + scale_y_continuous(labels = scales::percent, limits = c(0,1))
+#   }
+#   g %>% textSize(., incl.legend = TRUE) %>% ggplotly(., tooltip = c("text1", "text2"))
+# })
 
 output$select_height <- renderUI({
   req(user$initial, user$ptype)
