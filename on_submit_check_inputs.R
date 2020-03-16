@@ -1,5 +1,11 @@
 
-observeEvent(input$check_validity, {
+cl_data <- reactive({
+  # Invalid filetype (only accepts tsv/txt):
+  validate(need(tools::file_ext(values$path) %in% c("tsv","txt"), errMsg(5)))
+  readData(values$path)         # Threshold data
+})
+
+output$check_input <- renderText({
   req(input$data)               # loaded data file by user
   
   shinyjs::useShinyjs()
@@ -8,38 +14,44 @@ observeEvent(input$check_validity, {
   user$results <- NULL
   
   values$path <- input$data$datapath
-  inp$minC <- input$minC
+  df <- cl_data()
   
-  output$check_input <- renderText({
-    if (tools::file_ext(values$path) %in% c("tsv","txt")) {
-      df <- readData(values$path)
-      validate(
-        # All heights must be numeric: 
-        need(all(varhandle::check.numeric(colnames(df)[-1][-1])), errMsg(1)), 
-        
-        # The second column should have a non-numeric locus name:
-        need(!varhandle::check.numeric(colnames(df)[2]), errMsg(2)), 
-        
-        # The second column data should be binary
-        # need(length(unique(pull(df,2)))==2, errMsg(4)), 
-        
-        # The first column should be a list of genomes, with a non-numeric heading
-        need(!varhandle::check.numeric(colnames(df)[1]), errMsg(3)), 
-        
-        # There are one or more empty cells in the dataset.
-        need(!any(is.na(df)), errMsg(6)), 
-        
-        # Minimum cluster size not specified.
-        need(is.numeric(inp$minC), errMsg(7)))
-      
-      # Input data formatted correctly
-      errMsg(0)
-    }else {
-      # Invalid filetype (onlyaccepts tsv/txt)
-      errMsg(5)
-    }
-  })
-  user$bin <- readData(values$path) %>% pull(2) %>% unique()
+  validate(
+    # All heights must be numeric: 
+    need(all(varhandle::check.numeric(colnames(df)[-1][-1])), errMsg(1)), 
+    # The second column should have a non-numeric locus name:
+    need(!varhandle::check.numeric(colnames(df)[2]), errMsg(2)), 
+    # The first column should be a list of genomes, with a non-numeric heading:
+    need(!varhandle::check.numeric(colnames(df)[1]), errMsg(3)), 
+    # There are one or more empty cells in the dataset:
+    need(!any(is.na(df)), errMsg(6)), 
+    # Column names are not unique
+    need(length(colnames(df)) == length(unique(colnames(df))), errMsg(9))
+  )
+  user$bin <- pull(df,2) %>% unique()
+  errMsg(0)     # Input data formatted correctly
+})
+
+output$check_md <- renderText({
+  req(input$data, input$metadata)  # loaded datafiles by user
+  
+  values$md <- NULL
+  df <- cl_data()
+  md_path <- input$metadata$datapath
+  validate(need(tools::file_ext(md_path) %in% c("tsv","txt"), errMsg(5)))
+  
+  md <- readData(input$metadata$datapath)
+  # Column names are unique:
+  validate(need(length(colnames(md)) == length(unique(colnames(md))), errMsg(9)))
+  
+  inds_in_both <- intersect(pull(md,1), pull(df,1))
+  # Contains all the id values in the cluster file (at least them):
+  validate(need(length(inds_in_both) >= nrow(df), errMsg(8)))
+  
+  md <- md[md %>% pull(1) %in% inds_in_both,]
+  
+  values$md <- md
+  errMsg(0)
 })
 
 output$posValUI <- renderUI({
@@ -73,11 +85,14 @@ observe({
 # (ID | Binary Variable | Thresholds...)
 observeEvent(input$submit, {
   df <- readData(values$path)
+  inp$minC <- ifelse(is.na(input$minC), 0, input$minC)
   values$locus <- colnames(df)[2]
   user$pos <- toString(user$pvals)
   user$neg <- toString(user$nvals)
   df[,values$locus] <- pull(df, 2) %>% replace(. %in% user$pvals, user$pos)
   df[,values$locus] <- pull(df, 2) %>% replace(. %in% user$nvals, user$neg)
+  
+  basic$metadata <- values$md
   inp$data <- df
 })
 

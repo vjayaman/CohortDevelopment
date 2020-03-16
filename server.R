@@ -62,7 +62,7 @@ server <- function(input, output, session) {
                   selection = list(target = "cell", mode = "single")) %>% 
       formatStyle(3:5, border = '1px solid #ddd')
   })
-  
+
   # Mini table of cluster sizes
   source("new_table_on_cellclick.R", local = TRUE)
   
@@ -78,20 +78,23 @@ server <- function(input, output, session) {
     h <- colnames(inp$data)[3:ncol(inp$data)] # all heights in the dataset
 
     withProgress(message = "Collecting metric data, going through thresholds: ", value = 0, {
+      
       user$initial <-lapply(1:length(h), function(i) {
         incProgress(1/length(h), 
                     detail = paste0(round(i/length(h), digits=2)*100, "% done"))
         # | height | prop.clusters | homogeneity values | type (neg/pos) | num.of.clusters | prop.of.data
-        globalMetrics(values$locus, h[i], inp$data, inp$minC, a1$Bin[which.min(a1$Freq)], 
-                      percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
+        globalMetrics(
+          values$locus, h[i], inp$data, inp$minC, a1$Bin[which.min(a1$Freq)], 
+          percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
       }) %>% bind_rows() %>% 
         set_colnames(c("h", "prop.cl", "perc.th", "th.type", "num.cl", "prop.of.data"))
     })
     # selects columns for neg. homogeneity, then renames
     df2 <- tableNames(user$initial, "neg", inp$minC)
     # selects columns for pos. homogeneity, renames, then merges with neg. table
-    user$results <- tableNames(user$initial, "pos", inp$minC) %>% 
+    ur_tbl <- tableNames(user$initial, "pos", inp$minC) %>% 
       merge(., df2, by = colnames(df2)[1:2]) %>% as_tibble()
+    user$results <- ur_tbl[ur_tbl %>% pull(1) %>% as.character() %>% as.numeric() %>% order(),]
     
     # selects columns, then converts as.num(Height), as.char(Pos/Neg Threshold)
     user$plot <- selectColsName(user$results, c(1:3,5,6,8))
@@ -118,7 +121,7 @@ server <- function(input, output, session) {
     tableX$`Number of negative homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     tableX$`Number of positive homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     cols <- colnames(tableX)
-    tableX[cols] <- lapply(tableX[cols], as.factor) 
+    tableX[cols] <- lapply(tableX[cols], as.factor)
     #https://stackoverflow.com/questions/33180058/coerce-multiple-columns-to-factors-at-once
     tableX %>% 
       DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 

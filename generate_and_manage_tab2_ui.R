@@ -49,6 +49,20 @@ output$negStepSizeUI <- renderUI({
   stepSliderInput("step_size_n", percLhs(), 10)
 })
 
+output$close_up_bubbles <- renderUI({
+  tagList(
+    tags$br(), tags$br(), tags$br(), 
+    box(width = 10, collapsible = TRUE, 
+        checkboxGroupInput("int_plots", selected = NULL, 
+                           "Interactive plots of positive and negative homogeneity clusters, respectively", 
+                           choices = c("Positive" = "pos_plot", "Negative" = "neg_plot"))), 
+    tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), tags$br(), 
+    plotlyOutput("positive_bubble", width = "100%", height = "650px"), 
+    tags$br(), tags$br(), 
+    plotlyOutput("negative_bubble", width = "100%", height = "650px")
+  )
+})
+
 # Modules - homogeneity percent thresholds and step sizes
 percRhs <- callModule(percSlider, "rhs_perc")
 stepRhs <- callModule(stepSlider, "step_size_p")

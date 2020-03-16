@@ -11,7 +11,7 @@ output$click_cells <- renderUI({
 # On cell click of the main table, outputs a mini table of clusters and sizes associated 
 # with the number selected in the main table
 output$cluster_info <- renderDT({
-  req(inp$data, user$tbl, length(input$num_clusters_cell_clicked)>0)
+  req(inp$data, user$tbl, length(input$num_clusters_cell_clicked)>0, user$lim)
   clicked <- input$num_clusters_cell_clicked
   h <- user$tbl$Heights[clicked$row]
   
@@ -25,7 +25,8 @@ output$cluster_info <- renderDT({
       filter(n >= inp$minC) %>% set_colnames(c("Cluster number","Size")) %>% asDT()
     
   }else {
-    user$lim[[h]] %>% ungroup() %>% select(Clusters,Size,Var) %>% 
+    cnames <- user$lim[[h]] %>% ungroup() %>% colnames()
+    user$lim[[h]] %>% ungroup() %>% select(cnames[1],cnames[4],cnames[2]) %>% 
       set_colnames(c("Cluster number", "Size", "100% ___")) %>% asDT()
   }
 })
@@ -41,13 +42,12 @@ output$click_results <- renderUI({
 # On row click of the final results table, outputs a table of the clusters and specific info at that height
 output$final <- renderDT({
   req(user$results, inp$minC, length(input$results_rows_selected)==1, values$locus)
-  
   withProgress(message = "Generating table of information for selected row: ", value = 0, {
     
     incProgress(1/4, detail = "Collecting input data")
     rowX <- user$results[input$results_rows_selected,]    # the selected row
     lim <- inp$limiting
-    h <- rowX$Height
+    h <- rowX$Height %>% as.character()
     df <- inp$data
     x <- c(percLhs()/100, percRhs()/100, stepLhs(), stepRhs())  
     
@@ -72,11 +72,40 @@ output$final <- renderDT({
     # factor columns so table filtering will be with selectize, not sliders
     toshow[cnames] <- lapply(toshow[cnames], as.factor)
     
-    asDT(toshow, filter_opt = "top") %>%
+    DT::datatable(toshow, rownames = FALSE, filter = "top", 
+                  options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
+                                 dom = "ti", pageLength = nrow(toshow), scrollY = "500px"), 
+                  selection = list(mode = 'multiple', target = 'row')) %>% 
       formatRound(columns = 5, digits = 4) %>%
       formatStyle('Homogeneity type', target = 'row',
-                  backgroundColor = styleEqual(c('Positive','Negative'), c('lightblue','white')))  
+                  backgroundColor = styleEqual(c('Positive','Negative'), c('lightblue','white')))
   })
+})
+
+output$metadata_exp <- renderUI({
+  req(!is.null(basic$metadata), user$results, length(input$results_rows_selected)==1)
+  paste0("Select a row in the cluster table below to see the metadata associated with each cluster.")
+})
+
+output$selected_clusters <- renderDT({
+  req(user$final, length(input$final_rows_selected)>0, !is.null(basic$metadata), 
+      user$results, length(input$results_rows_selected)>0)
+  
+  md <- basic$metadata
+  h <- user$results$Height[input$results_rows_selected]    # the selected row
+  
+  dfx <- inp$data %>% select(1,h) %>% 
+    filter(., pull(inp$data, h) %in% user$final$Cluster[input$final_rows_selected])
+  
+  sample_info <- merge(dfx, md, by.x = colnames(dfx)[1], 
+                       by.y = colnames(md)[1], all.x = TRUE) %>% as_tibble()
+  
+  cols <- colnames(sample_info)
+  sample_info[cols] <- lapply(sample_info[cols], as.factor)
+  
+  sample_info %>% DT::datatable(., rownames = FALSE, filter = "top", 
+                                options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
+                                               dom = "tif", pageLength = nrow(sample_info), scrollY = "500px"))
 })
 
 # Download button: saves datatable info as "Homogeneity-both-<year>-<month>-<day>-<hours>-<minutes>.txt"

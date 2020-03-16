@@ -11,11 +11,15 @@ errMsg <- function(err_code) {
   }else if (err_code == 4) {
     "The data should \nbe binary." %>% return()
   }else if (err_code == 5) {
-    "Invalid filetype \n(onlyaccepts tsv/txt)." %>% return()
+    "Invalid filetype \n(only accepts tsv/txt)." %>% return()
   }else if (err_code == 6) {
     "There are one or \nmore empty cells in \nthe dataset." %>% return()
   }else if (err_code == 7) {
     "Minimum cluster size \nnot specified." %>% return()
+  }else if (err_code == 8) {
+    "Elements of the cluster file are \nnot found in the metadata. \nMetadata file will not be used." %>% return()
+  }else if (err_code == 9) {
+    "Column names are not unique." %>% return()
   }else if (err_code == 0) {
     "Input data formatted \ncorrectly." %>% return()
   }

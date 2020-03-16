@@ -1,8 +1,14 @@
 x <- c('shiny','magrittr', 'tibble','dplyr','ggplot2','reshape2', 
        'data.table','DT','RColorBrewer','tidyr','plotly','purrr', 
-       'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales', 
-       'relayer')
+       'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales')
 lapply(x, require, character.only = TRUE)
+
+# Global variables (keep these at a minimum) -------------------------------------------------
+
+pos_color_scheme <- c("#fff5f0", "#fee0d2", "#fcbba1", "#fc9272", "#fb6a4a",
+                      "#ef3b2c", "#cb181d", "#a50f15", "#67000d") %>% rev() %>% colorRampPalette(.)
+neg_color_scheme <- c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
+                      "#4292c6", "#2171b5", "#08519c", "#08306b") %>% colorRampPalette(.)
 
 # Modular inputs -----------------------------------------------------------------------------
 percSliderInput <- function(id, lbl, val) {
@@ -173,7 +179,7 @@ filterPerfect <- function(df, type, minC, perc, source_col) {
 
 readData <- function(datapath) {
   read.table(datapath, header=TRUE, sep="\t", 
-             check.names=FALSE, stringsAsFactors=FALSE) %>% return()
+             check.names=FALSE, stringsAsFactors=FALSE, fill = TRUE) %>% return()
 }
 
 selectColsName <- function(df, cols) {
