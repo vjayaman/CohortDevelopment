@@ -36,11 +36,14 @@ body <-   dashboardBody(
                    column(width = 3, 
                           numericInput("minC", label = "Minimum cluster size: ", value = 10), 
                           shinyjs::useShinyjs(),
+                          uiOutput("metadataColumnUI"), 
                           uiOutput("posValUI"), 
                           hidden(actionButton("submit", "Submit", style = "font-size: 16px;"))), 
                    column(width = 4,
                           verbatimTextOutput("base_metrics", placeholder = TRUE),
-                          tags$head(tags$style(HTML("#base_metrics {font-size: 16px;}"))))
+                          tags$head(tags$style(HTML("#base_metrics {font-size: 16px;}"))), 
+                          verbatimTextOutput("removed_rows", placeholder = TRUE),
+                          tags$head(tags$style(HTML("#removed_rows {font-size: 16px;}"))))
                )
         )
       ),
@@ -54,12 +57,13 @@ body <-   dashboardBody(
             
       fluidRow(column(width = 10, offset = 1,  
                       plotOutput("limiting_factor", width = "100%", height = "800px"), 
-                      tags$br(), tags$br())), tags$br(), 
+                      uiOutput("close_up_lines"), tags$br(), tags$br())), tags$br(), 
       
       fluidRow(column(width = 10, offset = 1,  
                       uiOutput("select_height"), 
-                      plotOutput("bubble_plot", width = "100%", height = "650px"), 
-                      uiOutput("close_up_bubbles"))), tags$br(), tags$br(), tags$br(), 
+                      plotOutput("bubble_plot", width = "100%", height = "650px"),
+                      uiOutput("close_up_bubbles")
+                      )), tags$br(), tags$br(), tags$br(), 
             
       fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("click_results")))), 
             

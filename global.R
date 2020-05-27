@@ -1,14 +1,15 @@
 x <- c('shiny','magrittr', 'tibble','dplyr','ggplot2','reshape2', 
        'data.table','DT','RColorBrewer','tidyr','plotly','purrr', 
-       'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales')
+       'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales', 
+       'Hmisc')
 lapply(x, require, character.only = TRUE)
 
 # Global variables (keep these at a minimum) -------------------------------------------------
 
-pos_color_scheme <- c("#fff5f0", "#fee0d2", "#fcbba1", "#fc9272", "#fb6a4a",
-                      "#ef3b2c", "#cb181d", "#a50f15", "#67000d") %>% rev() %>% colorRampPalette(.)
-neg_color_scheme <- c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
-                      "#4292c6", "#2171b5", "#08519c", "#08306b") %>% colorRampPalette(.)
+pos_color_scheme <- c("#fcbba1", "#fc9272", "#fb6a4a", "#ef3b2c", "#cb181d", 
+                      "#a50f15", "#67000d") %>% rev() %>% colorRampPalette(.)
+neg_color_scheme <- c("#9ecae1", "#6baed6", "#4292c6", "#2171b5", 
+                      "#08519c", "#08306b") %>% colorRampPalette(.)
 
 # Modular inputs -----------------------------------------------------------------------------
 percSliderInput <- function(id, lbl, val) {
@@ -39,9 +40,10 @@ stepSliderInput <- function(id, maxval, selected = NULL) {
 #           | percent (percent of the population, so Freq/Total) 
 #           | Type (Negative, Positive) | Total (size of population) | 
 binaryStats <- function(df.col, pos, neg) {
-  inds <- df.col %in% pos
+  df.x <- unlist(df.col)
+  inds <- df.x %in% pos
   a1 <- tibble("Bin" = c(toString(pos), toString(neg)), 
-               "Freq" = c(df.col[inds] %>% length(), df.col[!inds] %>% length()))
+               "Freq" = c(df.x[inds] %>% length(), df.x[!inds] %>% length()))
   a1 %>% add_column("percent" = (a1$Freq/sum(a1$Freq)) %>% scales::percent()) %>% 
     add_column("Type" = c("Positive", "Negative")) %>% 
     add_column(Tot = sum(a1$Freq)) %>% return()

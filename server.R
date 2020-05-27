@@ -89,6 +89,7 @@ server <- function(input, output, session) {
       }) %>% bind_rows() %>% 
         set_colnames(c("h", "prop.cl", "perc.th", "th.type", "num.cl", "prop.of.data"))
     })
+    
     # selects columns for neg. homogeneity, then renames
     df2 <- tableNames(user$initial, "neg", inp$minC)
     # selects columns for pos. homogeneity, renames, then merges with neg. table

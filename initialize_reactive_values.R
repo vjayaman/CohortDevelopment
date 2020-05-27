@@ -8,7 +8,7 @@ cell <- reactiveValues(row = NULL, col = NULL)
 # values$locus <- the name of the second column in the user's input data (e.g. "Source", or "Locus")
 # values$path <- the datapath to where the user's input data can be accessed
 # values$lim <- 0 or 1, whichever is the limiting factor
-values <- reactiveValues(locus = NULL, path = NULL, md = NULL)
+values <- reactiveValues(locus = NULL, path = NULL, md = NULL, prelim = NULL, removed_md = NULL)
 
 # user$results <- table with columns:
 #   Height, Proportion of clusters with size >= minC (a user-set minimum cluster size), 
@@ -50,3 +50,6 @@ plots <- reactiveValues(bubble_data = NULL, bubble_title = NULL)
 basic <- reactiveValues(data = NULL, metadata = NULL)
 
 best <- reactiveValues(heights = NULL)
+
+limplot <- reactiveValues(df = NULL, df_pos = NULL, df_neg = NULL, 
+                          ptype = NULL, minC = NULL, yval = NULL)
