@@ -11,9 +11,9 @@ getPackage <- function(p) {
   }
 }
 
-getPackage("packrat")
-library(packrat)
-packrat::init(options = list(ignored.packages = "relayer"))
+# getPackage("packrat")
+# library(packrat)
+# packrat::init(options = list(ignored.packages = "relayer"))
 getPackage("backports")
 getPackage("devtools")
 devtools::install_github("clauswilke/relayer") # 1 to update all
