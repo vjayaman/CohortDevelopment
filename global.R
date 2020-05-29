@@ -1,5 +1,5 @@
-library(packrat)
-packrat::on()
+# library(packrat)
+# packrat::on()
 x <- c('shiny','magrittr', 'tibble','dplyr','ggplot2','reshape2', 
        'data.table','DT','RColorBrewer','tidyr','plotly','purrr', 
        'shinyWidgets', 'shinyjs','varhandle', 'shinydashboard','scales', 

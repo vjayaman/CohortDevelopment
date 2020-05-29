@@ -1,5 +1,5 @@
-library(packrat)
-packrat::on()
+# library(packrat)
+# packrat::on()
 require(plotly); require(shinyWidgets); require(shinydashboard)
 require(shinyjs);require(relayer)
 
