@@ -8,7 +8,6 @@ server <- function(input, output, session) {
   # Validate inputs
   source("explanations.R", local = TRUE) # errMsg(err_code) - validates inputs
   source("on_submit_check_inputs.R", local = TRUE)
-  # output$base_metrics from explanations.R
 
   ## Datatable of heights and number of clusters for each
   output$num_clusters <- renderDT({

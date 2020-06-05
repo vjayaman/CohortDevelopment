@@ -152,7 +152,7 @@ observeEvent(input$submit, {
 output$base_metrics <- renderText({
   req(inp$data, user$pos, user$neg, input$colOfInt)
   
-  a1 <- binaryStats(inp$data, user$pos, user$neg)
+  a1 <- binaryStats(inp$data[,input$colOfInt], user$pos, user$neg)
   ap <- a1 %>% filter(Type == "Positive")
   an <- a1 %>% filter(Type == "Negative")
 
