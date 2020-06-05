@@ -188,7 +188,7 @@ readData <- function(datapath) {
 
 selectColsName <- function(df, cols) {
   dfx <- df %>% select(cols)
-  dfx$Height <- as.numeric(dfx$Height)
+  dfx$Height <- as.character(dfx$Height)
   dfx$`Positive threshold` <- as.character(dfx$`Positive threshold`)
   dfx$`Negative threshold` <- as.character(dfx$`Negative threshold`)
   return(dfx)

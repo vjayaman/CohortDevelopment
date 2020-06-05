@@ -3,6 +3,10 @@ output$limiting_factor <- renderPlot({
   req(inp$data, user$initial, user$ptype)
   dfx <- user$initial
   
+  saveRDS(inp$data, "inp_data.Rds")
+  saveRDS(user$initial, "user_initial.Rds")
+  saveRDS(user$ptype, "user_ptype.Rds")
+  print("limiting_factor plot")
   df_heights <- data.frame(
     h = dfx$h %>% unique(), 
     numeric_height = 1:length(unique(dfx$h)), stringsAsFactors = FALSE)
@@ -165,7 +169,7 @@ output$select_height <- renderUI({
 })
 
 observeEvent(input$specific_h, {
-  req(inp$data, user$results, inp$data, input$height, values$locus)
+  req(inp$data, user$results, input$height, values$locus)
   
   h <- input$height
   plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
@@ -185,7 +189,8 @@ observeEvent(input$specific_h, {
   
   csizes <- inp$data %>% select(h) %>% table() %>% as.data.frame() %>% as_tibble() %>% 
     set_colnames(c("Clusters","Size"))
-  csizes$Clusters <- as.character(csizes$Clusters) %>% as.numeric()
+  csizes$Clusters <- as.character(csizes$Clusters)
+  
   df <- left_join(df, csizes, by = "Clusters")
   
   df$Prop <- df$Count/df$Size
@@ -243,8 +248,8 @@ output$bubble_plot <- renderPlot({
     scale_size_continuous(range = c(2,7)) + 
     theme(strip.text.y = element_text(margin = margin(0,2,0,2)), 
           strip.text = element_text(size = 14), axis.text.y = element_text(size = 13), 
-          axis.text.x = element_text(size = 13), title = element_text(size = 14), 
-          legend.text = element_text(size = 12))
+          axis.text.x = element_blank(), title = element_text(size = 14), 
+          axis.ticks.x = element_blank(), legend.text = element_text(size = 12))
 })
 
 output$positive_bubble <- renderPlotly({
@@ -259,6 +264,7 @@ output$positive_bubble <- renderPlotly({
   
   {ggplot(df_pos, aes(x = `Cluster names`, y = `Percent of cluster`, color = `Percent interval`)) + 
       geom_point() + geom_point(aes(size = `Cluster size`), show.legend = FALSE) + 
+      theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) + 
       ggtitle(paste0("Positive cluster homogeneity (>= y % of the cluster has ", 
                      inp$limiting, ")")) + 
       scale_color_manual(values = pos(p1), name = "Percent\ninterval")} %>% 
@@ -276,7 +282,8 @@ output$negative_bubble <- renderPlotly({
   n1 <- df_neg %>% pull(`Percent interval`) %>% unique() %>% length()
   
   {ggplot(df_neg, aes(x = `Cluster names`, y = `Percent of cluster`, color = `Percent interval`)) + 
-      geom_point() + geom_point(aes(size = `Cluster size`), show.legend = FALSE)  + 
+      geom_point() + geom_point(aes(size = `Cluster size`), show.legend = FALSE) + 
+      theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) + 
       ggtitle(paste0("Negative cluster homogeneity (<= y % of the cluster has ", inp$limiting, ")")) +
       scale_color_manual(values = neg(n1), name = "Percent\ninterval")} %>% ggplotly()
 })
