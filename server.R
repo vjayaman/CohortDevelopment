@@ -110,6 +110,7 @@ server <- function(input, output, session) {
   # When the data has been generated, use dataset size to define plot height
   # Then set up the UI components for the plot, datatable, and download button
   source("plots.R", local = TRUE)
+  source("bubble_plots.R", local = TRUE)
   
   # output$plot_exp from explanations.R
   
