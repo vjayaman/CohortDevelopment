@@ -169,6 +169,7 @@ output$select_height <- renderUI({
 })
 
 observeEvent(input$specific_h, {
+  print("line 172 of plots.R")
   req(inp$data, user$results, input$height, values$locus)
   
   h <- input$height
@@ -178,14 +179,25 @@ observeEvent(input$specific_h, {
   neg_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
   
-  df <- inp$data %>% select(h, values$locus) %>% group_by_all() %>% count() %>% 
+  
+  saveRDS(inp$data, "inp_data.Rds")
+  saveRDS(user$results, "user_results.Rds")
+  saveRDS(input$height, "input_height.Rds")
+  saveRDS(values$locus, "values_locus.Rds")
+  saveRDS(neg_h, "neg_h.Rds")
+  saveRDS(pos_h, "pos_h.Rds")
+  saveRDS(inp$limiting, "inp_limiting.Rds")
+  
+  df <- inp$data %>% select(h, all_of(values$locus)) %>% group_by_all() %>% count() %>% 
     set_colnames(c("Clusters", values$locus, "Count")) %>% ungroup()
+  
   homogeneous <- table(df$Clusters) %>% as.data.frame() %>% filter(Freq == 1) %>% pull(Var1)
   tmp <- df %>% filter(Clusters %in% homogeneous)
   tmp[,values$locus] <- tmp %>% pull(values$locus) %>% 
     lapply(., function(x) setdiff(inp$data %>% pull(values$locus) %>% unique(), x)) %>% unlist()
   tmp$Count <- 0
   df <- bind_rows(df, tmp)
+  df$Clusters <- as.character(df$Clusters)
   
   csizes <- inp$data %>% select(h) %>% table() %>% as.data.frame() %>% as_tibble() %>% 
     set_colnames(c("Clusters","Size"))
