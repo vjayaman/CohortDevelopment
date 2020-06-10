@@ -64,7 +64,9 @@ body <-   dashboardBody(
       fluidRow(column(width = 10, offset = 1,  
                       uiOutput("select_height"), 
                       plotOutput("bubble_plot", width = "100%", height = "650px"),
-                      uiOutput("close_up_bubbles")
+                      uiOutput("pos_bubbles"), 
+                      uiOutput("neg_bubbles")
+                      # uiOutput("close_up_bubbles")
                       )), tags$br(), tags$br(), tags$br(), 
             
       fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("click_results")))), 

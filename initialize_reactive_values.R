@@ -45,7 +45,7 @@ user <- reactiveValues(input = NULL, results = NULL, initial = NULL, plot = NULL
 # inp$data <- user's input data
 inp <- reactiveValues(minC = NULL, data = NULL, type1 = NULL, type2 = NULL, limiting = NULL)
 
-plots <- reactiveValues(bubble_data = NULL, bubble_title = NULL)
+plots <- reactiveValues(bubble_data = NULL, bubble_title = NULL, pos_data = NA, neg_data = NA)
 
 basic <- reactiveValues(data = NULL, metadata = NULL)
 

@@ -59,14 +59,17 @@ output$close_up_lines <- renderUI({
   )
 })
 
-output$close_up_bubbles <- renderUI({
-  tagList(
-    tags$br(), tags$br(), tags$br(), 
-    plotlyOutput("positive_bubble", width = "100%", height = "650px"), 
-    tags$br(), tags$br(), 
-    plotlyOutput("negative_bubble", width = "100%", height = "650px")
-  )
-})
+
+# output$close_up_bubbles <- renderUI({
+#   tagList(
+#     tags$br(), tags$br(), tags$br(), 
+#     # plotlyOutput("positive_bubble", width = "100%", height = "650px"), 
+#     tags$br(), tags$br(), 
+#     plotlyOutput("negative_bubble", width = "100%", height = "650px"), 
+#     tags$br(),
+#     verbatimTextOutput("indiv_bub_plot")
+#   )
+# })
 
 
 # Modules - homogeneity percent thresholds and step sizes

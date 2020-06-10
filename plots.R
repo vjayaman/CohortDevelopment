@@ -3,10 +3,6 @@ output$limiting_factor <- renderPlot({
   req(inp$data, user$initial, user$ptype)
   dfx <- user$initial
   
-  saveRDS(inp$data, "inp_data.Rds")
-  saveRDS(user$initial, "user_initial.Rds")
-  saveRDS(user$ptype, "user_ptype.Rds")
-  print("limiting_factor plot")
   df_heights <- data.frame(
     h = dfx$h %>% unique(), 
     numeric_height = 1:length(unique(dfx$h)), stringsAsFactors = FALSE)
@@ -169,7 +165,6 @@ output$select_height <- renderUI({
 })
 
 observeEvent(input$specific_h, {
-  print("line 172 of plots.R")
   req(inp$data, user$results, input$height, values$locus)
   
   h <- input$height
@@ -178,15 +173,6 @@ observeEvent(input$specific_h, {
   
   neg_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
-  
-  
-  saveRDS(inp$data, "inp_data.Rds")
-  saveRDS(user$results, "user_results.Rds")
-  saveRDS(input$height, "input_height.Rds")
-  saveRDS(values$locus, "values_locus.Rds")
-  saveRDS(neg_h, "neg_h.Rds")
-  saveRDS(pos_h, "pos_h.Rds")
-  saveRDS(inp$limiting, "inp_limiting.Rds")
   
   df <- inp$data %>% select(h, all_of(values$locus)) %>% group_by_all() %>% count() %>% 
     set_colnames(c("Clusters", values$locus, "Count")) %>% ungroup()
@@ -264,11 +250,30 @@ output$bubble_plot <- renderPlot({
           axis.ticks.x = element_blank(), legend.text = element_text(size = 12))
 })
 
+
+output$pos_bubbles <- renderUI({
+  req(inp$data, user$results, plots$bubble_data)
+  df_pos <- plots$bubble_data %>% filter(!is.na(PosFraction))
+  
+  if (nrow(df_pos) > 0) {
+    plots$pos_data <- ""
+    plotlyOutput("positive_bubble", width = "100%", height = "650px")
+  }else {
+    plots$pos_data <- paste0("No clusters are such that >= y % of the cluster has ", inp$limiting)
+    verbatimTextOutput("no_pos_data")
+  }
+})
+
+output$no_pos_data <- renderText({
+  req(plots$pos_data)
+  plots$pos_data
+})
+
 output$positive_bubble <- renderPlotly({
   req(inp$data, user$results, plots$bubble_data)
+  plots$pos_data <- ""
+  df_pos <- plots$bubble_data %>% filter(!is.na(PosFraction)) %>% select(Clusters,Size,Prop,PosPercent)
   
-  df <- plots$bubble_data
-  df_pos <- df %>% filter(!is.na(PosFraction)) %>% select(Clusters,Size,Prop,PosPercent)
   colnames(df_pos) <- c("Cluster names","Cluster size","Percent of cluster","Percent interval")
   pos <- c("#fff5f0", "#fee0d2", "#fcbba1", "#fc9272", "#fb6a4a",
            "#ef3b2c", "#cb181d", "#a50f15", "#67000d") %>% rev() %>% colorRampPalette(.)
@@ -277,18 +282,36 @@ output$positive_bubble <- renderPlotly({
   {ggplot(df_pos, aes(x = `Cluster names`, y = `Percent of cluster`, color = `Percent interval`)) + 
       geom_point() + geom_point(aes(size = `Cluster size`), show.legend = FALSE) + 
       theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) + 
-      ggtitle(paste0("Positive cluster homogeneity (>= y % of the cluster has ", 
-                     inp$limiting, ")")) + 
+      ggtitle(paste0("Positive cluster homogeneity (>= y % of the cluster has ",inp$limiting, ")")) + 
       scale_color_manual(values = pos(p1), name = "Percent\ninterval")} %>% 
     ggplotly()
+})
+
+output$neg_bubbles <- renderUI({
+  req(inp$data, user$results, plots$bubble_data)
+  df_neg <- plots$bubble_data %>% filter(!is.na(NegFraction))
+  
+  if (nrow(df_neg) > 0) {
+    plots$neg_data <- ""
+    plotlyOutput("negative_bubble", width = "100%", height = "650px")
+  }else {
+    plots$neg_data <- paste0("Negative cluster homogeneity (<= y % of the cluster has ", inp$limiting, ")")
+    verbatimTextOutput("no_neg_data")
+  }
+})
+
+output$no_neg_data <- renderText({
+  req(plots$neg_data)
+  plots$neg_data
 })
 
 output$negative_bubble <- renderPlotly({
   req(inp$data, user$results, plots$bubble_data)
   
-  df <- plots$bubble_data
-  df_neg <- df %>% filter(!is.na(NegFraction)) %>% select(Clusters,Size,Prop,NegPercent)
-  colnames(df_neg) <- c("Cluster names","Cluster size","Percent of cluster","Percent interval")
+  plots$neg_data <- ""
+  df_neg <- plots$bubble_data %>% filter(!is.na(NegFraction)) %>% select(Clusters,Size,Prop,NegPercent) %>% 
+    set_colnames(c("Cluster names","Cluster size","Percent of cluster","Percent interval"))
+  
   neg <- c("#f7fbff", "#deebf7", "#c6dbef", "#9ecae1", "#6baed6",
            "#4292c6", "#2171b5", "#08519c", "#08306b") %>% rev() %>% colorRampPalette(.)
   n1 <- df_neg %>% pull(`Percent interval`) %>% unique() %>% length()
@@ -297,6 +320,10 @@ output$negative_bubble <- renderPlotly({
       geom_point() + geom_point(aes(size = `Cluster size`), show.legend = FALSE) + 
       theme(axis.ticks.x = element_blank(), axis.text.x = element_blank()) + 
       ggtitle(paste0("Negative cluster homogeneity (<= y % of the cluster has ", inp$limiting, ")")) +
-      scale_color_manual(values = neg(n1), name = "Percent\ninterval")} %>% ggplotly()
+      scale_color_manual(values = neg(n1), name = "Percent\ninterval")} %>% 
+    ggplotly()
 })
 
+output$indiv_bub_plot <- renderText({
+  paste0(plots$pos_data, "\n", plots$neg_data)
+})
