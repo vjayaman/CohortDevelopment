@@ -14,50 +14,62 @@ output$select_height <- renderUI({
 observeEvent(input$specific_h, {
   req(inp$data, user$results, input$height, values$locus)
   
-  h <- input$height
-  plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
-                               "limiting factor in each cluster, at height ", h)
-  
-  neg_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
-  pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
-  
-  df <- inp$data %>% select(all_of(h), all_of(values$locus)) %>% group_by_all() %>% count() %>% 
-    set_colnames(c("Clusters", values$locus, "Count")) %>% ungroup()
-  
-  homogeneous <- table(df$Clusters) %>% as.data.frame() %>% filter(Freq == 1) %>% pull(Var1)
-  tmp <- df %>% filter(Clusters %in% homogeneous)
-  tmp[,values$locus] <- tmp %>% pull(values$locus) %>% 
-    lapply(., function(x) setdiff(inp$data %>% pull(values$locus) %>% unique(), x)) %>% unlist()
-  tmp$Count <- 0
-  df <- bind_rows(df, tmp)
-  df$Clusters <- as.character(df$Clusters)
-  
-  csizes <- inp$data %>% select(all_of(h)) %>% table() %>% as.data.frame() %>% as_tibble() %>% 
-    set_colnames(c("Clusters","Size"))
-  csizes$Clusters <- as.character(csizes$Clusters)
-  
-  df <- left_join(df, csizes, by = "Clusters")
-  
-  df$Prop <- df$Count/df$Size
-  df <- df %>% filter(Size >= inp$minC)
-  df$NegFraction <- df$PosFraction <- 0
-  
-  for (i in neg_h) {df$NegFraction[which(df$Prop <= i)] <- i}
-  for (i in rev(pos_h)) {df$PosFraction[which(df$Prop >= i)] <- i}
-  df <- df %>% filter(., pull(df, values$locus) %in% inp$limiting)
-  
-  df$PosPercent <- df$PosFraction %>% percent()
-  df$NegPercent <- df$NegFraction %>% percent()
-  df$PosPercent <- factor(df$PosPercent, levels = df$PosPercent[order(df$PosFraction, decreasing = TRUE)] %>% unique())
-  df$NegPercent <- factor(df$NegPercent, levels = df$NegPercent[order(df$NegFraction, decreasing = FALSE)] %>% unique())
-  
-  df$Percent <- as.character(df$PosPercent)
-  df$Percent[df$NegPercent != 0] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
-  # df$Percent[!is.na(df$NegPercent)] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
-  df <- df %>% filter(Percent != "0%")
-  df$Percent <- factor(df$Percent, levels = df$Percent[order(df$Prop, decreasing = TRUE)] %>% unique())
-  
-  plots$bubble_data <- df
+  withProgress(message = "Preparing data for bubble plot:", value = 0, {
+    h <- input$height
+    plots$bubble_title <- paste0("Clusters used to calculate the selected proportion of ",
+                                 "limiting factor in each cluster, at height ", h)
+    
+    neg_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
+    pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
+    
+    incProgress(1/4, detail = "25% done")
+    
+    df <- inp$data %>% select(all_of(h), all_of(values$locus)) %>% 
+      group_by_all() %>% count() %>% 
+      set_colnames(c("Clusters", values$locus, "Count")) %>% ungroup()
+    
+    incProgress(1/4, detail = "50% done")
+    
+    homogeneous <- table(df$Clusters) %>% as.data.frame() %>% filter(Freq == 1) %>% pull(Var1)
+    tmp <- df %>% filter(Clusters %in% homogeneous)
+    tmp[,values$locus] <- tmp %>% pull(values$locus) %>% 
+      lapply(., function(x) setdiff(inp$data %>% pull(values$locus) %>% unique(), x)) %>% unlist()
+    tmp$Count <- 0
+    df <- bind_rows(df, tmp)
+    df$Clusters <- as.character(df$Clusters)
+    
+    incProgress(1/4, detail = "75% done")
+    
+    csizes <- inp$data %>% select(all_of(h)) %>% table() %>% as.data.frame() %>% as_tibble() %>% 
+      set_colnames(c("Clusters","Size"))
+    csizes$Clusters <- as.character(csizes$Clusters)
+    
+    df <- left_join(df, csizes, by = "Clusters")    
+    df$Prop <- df$Count/df$Size
+    df <- df %>% filter(Size >= inp$minC)
+    df$NegFraction <- df$PosFraction <- 0
+    
+    incProgress(1/4, detail = "Done")
+    
+    for (i in neg_h) {df$NegFraction[which(df$Prop <= i)] <- i}
+    for (i in rev(pos_h)) {df$PosFraction[which(df$Prop >= i)] <- i}
+    df <- df %>% filter(., pull(df, values$locus) %in% inp$limiting)
+    
+    dfP <- df$PosPercent <- df$PosFraction %>% percent()
+    dfN <- df$NegPercent <- df$NegFraction %>% percent()
+
+    df$PosPercent <- factor(dfP, levels = dfP[order(df$PosFraction, decreasing = TRUE)] %>% unique())
+    df$NegPercent <- factor(dfN, levels = dfN[order(df$NegFraction, decreasing = FALSE)] %>% unique())    
+    
+    df$Percent <- as.character(df$PosPercent)
+    df$Percent[df$NegPercent != 0] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
+    # df$Percent[!is.na(df$NegPercent)] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
+    df <- df %>% filter(Percent != "0%")
+    df$Percent <- factor(df$Percent, levels = df$Percent[order(df$Prop, decreasing = TRUE)] %>% unique())
+    
+    incProgress(1, detail = "100% done")
+    plots$bubble_data <- df  
+  })
 })
 
 output$bubble_plot <- renderPlot({

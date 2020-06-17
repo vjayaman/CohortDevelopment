@@ -12,6 +12,8 @@ server <- function(input, output, session) {
   ## Datatable of heights and number of clusters for each
   output$num_clusters <- renderDT({
     req(inp$data, user$lim, inp$limiting, user$bin)
+    req(nrow(inp$data) > 0)
+    
     # user$lim <- perfect clusters, with 100% being the lim
     # inp_limiting <- a1$Bin[which.min(a1$Freq)]
     
@@ -79,30 +81,40 @@ server <- function(input, output, session) {
     m <- length(h)
     inp$mets <- inp$cl.calls <- replicate(m, matrix(), simplify = FALSE) %>% set_names(h)
     
-    withProgress(message = "Collecting metric data, going through thresholds: ", value = 0, {
-      
+    progress_bar <- Progress$new(session, min = 1, max = m)
       user$initial <-lapply(1:m, function(i) {
         # df of | id | locus (with binary data just for one cohort - the limiting one) | clusters for a single height
+        
         inp$cl.calls[[h[i]]] <- cl.calls <- inp$data %>% 
           select(colnames(inp$data)[1], all_of(values$locus), all_of(h[i])) %>% 
           set_colnames(c("id","locus","clusters"))
         
+        progress_bar$set(message = "Collecting metric data through thresholds")
+        progress_bar$set(value = i)
+        
+        clusters <- cl.calls$clusters %>% unique()
         # All clusters, table of | Cluster | Size | Cohort.lim = 1 or 0 (only the limiting) | WP (fraction, then dec)
-        inp$mets[[h[i]]] <- mets <- cl.calls$clusters %>% unique() %>% 
-          lapply(., function(cluster) 
-            alleleBinCounts(cl.calls, cluster, cohort.lim = a1$Bin[which.min(a1$Freq)])) %>% 
-          bind_rows()
         
-        incProgress(1/m, detail = paste0(round(i/m, digits=2)*100, "% done"))
+        progress_cluster <- Progress$new(session, min = 1, max = length(clusters))
         
+        inp$mets[[h[i]]] <- mets <- 1:length(clusters) %>% 
+          lapply(., function(k) {
+            progress_cluster$set(message = paste0("Running for height ", h[i]))
+            progress_cluster$set(value = k)
+            alleleBinCounts(cl.calls, clusters[k], cohort.lim = a1$Bin[which.min(a1$Freq)])
+          }) %>% bind_rows()
+        
+        progress_cluster$close()
+          
         # | height | prop.clusters | homogeneity values | type (neg/pos) | num.of.clusters | prop.of.data
         globalMetrics(
           values$locus, h[i], inp$data, inp$minC, a1$Bin[which.min(a1$Freq)], 
           percLhs()/100, percRhs()/100, stepLhs(), stepRhs(), cl.calls, mets)
       }) %>% bind_rows() %>% 
         set_colnames(c("h", "prop.cl", "perc.th", "th.type", "num.cl", "prop.of.data"))
-    })
 
+    progress_bar$close()
+      
     # selects columns for neg. homogeneity, then renames
     df2 <- tableNames(user$initial, "neg", inp$minC)
     # selects columns for pos. homogeneity, renames, then merges with neg. table
