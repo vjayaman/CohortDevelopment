@@ -36,14 +36,16 @@ values <- reactiveValues(locus = NULL, path = NULL, md = NULL, prelim = NULL, re
 #   Clusters | Source | Freq | Size | Fraction
 
 # user$nonlim <- same as user$lim, but for the nonlimiting factor instead
-user <- reactiveValues(input = NULL, results = NULL, initial = NULL, plot = NULL, 
+user <- reactiveValues(input = NULL, results = NULL, initial = NULL, full_tbl = NULL, 
+                       plot = NULL, 
                        tbl = NULL, lim = NULL, nonlim = NULL, ptype = NULL, final = NULL, 
                        pvals = NULL, nvals = NULL, 
                        pos = NULL, neg = NULL, bin = NULL)
 
 # inp$minC <- user-set minimum cluster size
 # inp$data <- user's input data
-inp <- reactiveValues(minC = NULL, data = NULL, type1 = NULL, type2 = NULL, limiting = NULL)
+inp <- reactiveValues(minC = NULL, data = NULL, type1 = NULL, type2 = NULL, limiting = NULL, 
+                      cl.calls = NULL, mets = NULL)
 
 plots <- reactiveValues(bubble_data = NULL, bubble_title = NULL, pos_data = "", neg_data = "", 
                         pos_color = NULL, neg_color = NULL)

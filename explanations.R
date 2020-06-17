@@ -46,8 +46,8 @@ blurb <- function(a = NULL, type) {
            "rest of the dataset.") %>% return()
     
   }else if (type == "ClickRow") {
-    paste0("(Click on a row in the table below to see the specifics of the clusters ", 
-           "indicated in bold.)") %>% return()
+    paste0("Click \'All heights\' to see a table of cluster specifics for all heights ", 
+           "(note, this may require some time to generate).\n") %>% return()
     
   }else if (type == "PosHExp") {
     paste0("In the first slider input, we select a percentage between 0 and 100, call this x. Directly ", 

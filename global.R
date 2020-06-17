@@ -91,18 +91,12 @@ homogeneityTables <- function(th, key.cl) {
 # gene <- "Source"; h <- '0'; df <- readData("data/FNC_MBS_Example.tsv"); minC <- 10;
 # cohort.lim <- 1; lhs <- 0.35; rhs <- 0.70; stepLhs <- 0.05; stepRhs <- 0.02
 # Full dataset -------------------------------------------------------------------------------
-globalMetrics <- function(gene, h, df, minC, cohort.lim, lhs, rhs, stepLhs, stepRhs) {
-  # df of | id | locus (with binary data just for one cohort - the limiting one) | clusters for a single height
-  cl.calls <- df %>% select(colnames(df)[1], gene, h) %>% 
-    set_colnames(c("id","locus","clusters"))
+globalMetrics <- function(gene, h, df, minC, cohort.lim, lhs, rhs, stepLhs, stepRhs, cl.calls, mets) {
+  # cl.calls <- | id | locus (with binary data just for one cohort - the limiting one) | clusters for a single height
+  # mets - All clusters, table of | Cluster | Size | Cohort.lim = 1 or 0 (only the limiting) | WP (fraction, then dec)
   
-  # All clusters, table of | Cluster | Size | Cohort.lim = 1 or 0 (only the limiting) | WP (fraction, then dec)
-  mets <- cl.calls$clusters %>% unique() %>% 
-    lapply(., function(cluster) alleleBinCounts(cl.calls, cluster, cohort.lim)) %>% bind_rows()
-  tot.size <- sum(mets$size)            # Size of population
-  
-  # Clusters of size >= user-set minimum
-  key.cl <- mets %>% filter(size >= minC)
+  tot.size <- sum(mets$size)                                # Size of population
+  key.cl <- mets %>% filter(size >= minC)                   # Clusters of size >= user-set minimum
   prop.clusters <- nrow(key.cl) %>% paste0(., "/", nrow(mets))
   
   th <- homogeneityTypes(lhs, rhs, stepLhs, stepRhs) # homogeneity types with corresponding values (e.g. 0.30 | neg)
@@ -114,8 +108,7 @@ globalMetrics <- function(gene, h, df, minC, cohort.lim, lhs, rhs, stepLhs, step
   cl_tbl <- homogeneityTables(th, key.cl)
   
   # how many clusters >= minC have a WP w/n the specified range?
-  th$num.of.clusters <- as.character(th$val) %>% 
-    lapply(., function(r) cl_tbl[[r]] %>% nrow()) %>% unlist()
+  th$num.of.clusters <- as.character(th$val) %>% lapply(., function(r) cl_tbl[[r]] %>% nrow()) %>% unlist()
   
   # what is the fraction of the pop. w/n the specified range and w/n clusters >= minC?
   th$prop.of.data <- as.character(th$val) %>% 
@@ -187,7 +180,7 @@ readData <- function(datapath) {
 }
 
 selectColsName <- function(df, cols) {
-  dfx <- df %>% select(cols)
+  dfx <- df %>% select(all_of(cols))
   dfx$Height <- as.character(dfx$Height)
   dfx$`Positive threshold` <- as.character(dfx$`Positive threshold`)
   dfx$`Negative threshold` <- as.character(dfx$`Negative threshold`)
@@ -202,4 +195,35 @@ pointText <- function(df, cols, val) {
 scale_manual <- function(aesthetics, values, name, ...) {
   scale_color_manual(
     aesthetics = aesthetics, values = values, name = name, ...)
+}
+
+sigClustersOneH <- function(df, values_locus, h, lim, x, user_results, key.cl) {
+  cl_tbl <- homogeneityTypes(x[1], x[2], x[3], x[4]) %>% 
+    homogeneityTables(., key.cl)
+  
+  cnames <- c("h", "sig.clusters", "th", "num.homogeneous", "prop.of.pop", "th.type")
+  tmp <- user_results %>% filter(Height == h)
+  a <- list(select(tmp, 1:5) %>% unique(), 
+            select(tmp, c(1,2,6:8)) %>% unique())
+  b <- lapply(1:2, function(i) 
+    strsplit(colnames(a[[i]])[3], split = " ")[[1]][1] %>% 
+      bind_cols(a[[i]], th.type = .) %>% 
+      set_colnames(cnames) %>% return()
+  ) %>% bind_rows()
+  
+  full_table <- lapply(1:nrow(b), function(i) {
+    index <- as.character(b$th)[i]
+    if (cl_tbl[[index]] %>% nrow() > 0) {
+      cbind(b[i,], cl_tbl[[ as.character(b$th)[i] ]])  
+    }
+  }) %>% bind_rows() %>% as_tibble() %>% 
+    select(1,2,6,3:5,7:11) %>% 
+    set_colnames(
+      c("Height", "Proportion of clusters with size >= 10", 
+        "Threshold type (__)", "Threshold", "Number of __ homogeneity clusters", 
+        "Proportion of population in __ homogeneity clusters", 
+        "Cluster name", "Cluster size", "Limiting cohort", 
+        "Within cluster proportion (fraction)", "Within cluster proportion (decimal)")
+    ) %>% 
+    return()
 }

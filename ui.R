@@ -70,14 +70,25 @@ body <-   dashboardBody(
                       plotlyOutput("negative_bubble", width = "100%", height = "650px")
                       
                       )), tags$br(), tags$br(), tags$br(), 
-            
-      fluidRow(column(width = 10, offset = 1, box(width = 12, uiOutput("click_results")))), 
-            
-      fluidRow(column(width = 10, offset = 1, DTOutput("results"))), tags$br(), tags$br(), 
-            
-      fluidRow(column(width = 10, offset = 1, 
-                      box(width = 12, uiOutput("dnldB_final"), uiOutput("metadata_exp")), 
-                      DTOutput("final"), DTOutput("selected_clusters")))
+      
+      fluidRow(
+        column(width = 10, offset = 1, 
+               tabBox(id = "tabset1", width = 12, height = NULL, 
+                 # The id lets us use input$tabset1 on the server to find the current tab
+                 tabPanel("Drill down tables", 
+                          uiOutput("click_results"), 
+                          DTOutput("results"), tags$br(), 
+                          uiOutput("metadata_exp"), 
+                          DTOutput("final"), tags$br(), 
+                          uiOutput("dnldB_final"), tags$hr(), 
+                          DTOutput("selected_clusters")
+                          ),
+                 tabPanel("Cluster specifics for all heights",  
+                          DTOutput("all_h_and_cl"), tags$br(),
+                          uiOutput("all_h_ui"))
+               )
+               )
+      )
       )
     )
 )

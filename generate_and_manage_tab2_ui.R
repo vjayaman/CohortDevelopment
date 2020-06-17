@@ -59,7 +59,6 @@ output$close_up_lines <- renderUI({
   )
 })
 
-
 # Modules - homogeneity percent thresholds and step sizes
 percRhs <- callModule(percSlider, "rhs_perc")
 stepRhs <- callModule(stepSlider, "step_size_p")
@@ -76,5 +75,5 @@ output$dnld_results <- downloadHandler(
 
 output$dnldB_final <- renderUI({
   req(user$final)
-  downloadButton("dnld_final", "Download table")
+  downloadButton("dnld_final", "Download Table 2")
 })

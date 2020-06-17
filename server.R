@@ -72,29 +72,45 @@ server <- function(input, output, session) {
   # On "update" button-click, uses user inputs to generate the proportions and relevant data
   observeEvent(input$update, {
     req(inp$data, values$locus, input$num_or_prop)
+    
     # stats of | Source (0/1) | Frequency in pop. | % of pop. | Type (Neg/Pos) | Size of pop.
     a1 <- inp$data[,2] %>% binaryStats(., user$pos, user$neg)
     h <- colnames(inp$data)[3:ncol(inp$data)] # all heights in the dataset
-
+    m <- length(h)
+    inp$mets <- inp$cl.calls <- replicate(m, matrix(), simplify = FALSE) %>% set_names(h)
+    
     withProgress(message = "Collecting metric data, going through thresholds: ", value = 0, {
       
-      user$initial <-lapply(1:length(h), function(i) {
-        incProgress(1/length(h), 
-                    detail = paste0(round(i/length(h), digits=2)*100, "% done"))
+      user$initial <-lapply(1:m, function(i) {
+        # df of | id | locus (with binary data just for one cohort - the limiting one) | clusters for a single height
+        inp$cl.calls[[h[i]]] <- cl.calls <- inp$data %>% 
+          select(colnames(inp$data)[1], all_of(values$locus), all_of(h[i])) %>% 
+          set_colnames(c("id","locus","clusters"))
+        
+        # All clusters, table of | Cluster | Size | Cohort.lim = 1 or 0 (only the limiting) | WP (fraction, then dec)
+        inp$mets[[h[i]]] <- mets <- cl.calls$clusters %>% unique() %>% 
+          lapply(., function(cluster) 
+            alleleBinCounts(cl.calls, cluster, cohort.lim = a1$Bin[which.min(a1$Freq)])) %>% 
+          bind_rows()
+        
+        incProgress(1/m, detail = paste0(round(i/m, digits=2)*100, "% done"))
+        
         # | height | prop.clusters | homogeneity values | type (neg/pos) | num.of.clusters | prop.of.data
         globalMetrics(
           values$locus, h[i], inp$data, inp$minC, a1$Bin[which.min(a1$Freq)], 
-          percLhs()/100, percRhs()/100, stepLhs(), stepRhs())
+          percLhs()/100, percRhs()/100, stepLhs(), stepRhs(), cl.calls, mets)
       }) %>% bind_rows() %>% 
         set_colnames(c("h", "prop.cl", "perc.th", "th.type", "num.cl", "prop.of.data"))
     })
-    
+
     # selects columns for neg. homogeneity, then renames
     df2 <- tableNames(user$initial, "neg", inp$minC)
     # selects columns for pos. homogeneity, renames, then merges with neg. table
     ur_tbl <- tableNames(user$initial, "pos", inp$minC) %>% 
       merge(., df2, by = colnames(df2)[1:2]) %>% as_tibble()
-    user$results <- ur_tbl[ur_tbl %>% pull(1) %>% as.character() %>% as.numeric() %>% order(),]
+    
+    ordering <- user$initial$h %>% unique()
+    user$results <- ur_tbl %>% arrange(factor(Height, levels = ordering))
     
     # selects columns, then converts as.num(Height), as.char(Pos/Neg Threshold)
     user$plot <- selectColsName(user$results, c(1:3,5,6,8))
@@ -119,6 +135,7 @@ server <- function(input, output, session) {
   output$results <- DT::renderDT({
     req(user$results)
     tableX <- user$results
+    
     tableX$`Number of negative homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     tableX$`Number of positive homogeneity clusters` %<>% paste0("<b>", ., "</b>")
     cols <- colnames(tableX)
@@ -127,7 +144,9 @@ server <- function(input, output, session) {
     tableX %>% 
       DT::datatable(options = list(columnDefs = list(list(className = "dt-center", targets = "_all")), 
                                        dom = "ti", pageLength = nrow(tableX), scrollY = "500px"), 
-                    rownames = FALSE, filter = "top", escape = FALSE, selection = "single") %>% 
+                    rownames = FALSE, filter = "top", escape = FALSE, selection = "single", 
+                    caption = paste0("Table 1: Click on a row in the table below to see the ", 
+                                     "specifics of the clusters indicated in bold")) %>% 
       formatRound(columns = c(5,8), digits = 4)
   })
 }

@@ -21,7 +21,7 @@ observeEvent(input$specific_h, {
   neg_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
   
-  df <- inp$data %>% select(h, all_of(values$locus)) %>% group_by_all() %>% count() %>% 
+  df <- inp$data %>% select(all_of(h), all_of(values$locus)) %>% group_by_all() %>% count() %>% 
     set_colnames(c("Clusters", values$locus, "Count")) %>% ungroup()
   
   homogeneous <- table(df$Clusters) %>% as.data.frame() %>% filter(Freq == 1) %>% pull(Var1)
@@ -32,7 +32,7 @@ observeEvent(input$specific_h, {
   df <- bind_rows(df, tmp)
   df$Clusters <- as.character(df$Clusters)
   
-  csizes <- inp$data %>% select(h) %>% table() %>% as.data.frame() %>% as_tibble() %>% 
+  csizes <- inp$data %>% select(all_of(h)) %>% table() %>% as.data.frame() %>% as_tibble() %>% 
     set_colnames(c("Clusters","Size"))
   csizes$Clusters <- as.character(csizes$Clusters)
   
@@ -40,7 +40,7 @@ observeEvent(input$specific_h, {
   
   df$Prop <- df$Count/df$Size
   df <- df %>% filter(Size >= inp$minC)
-  df$NegFraction <- df$PosFraction <- NA
+  df$NegFraction <- df$PosFraction <- 0
   
   for (i in neg_h) {df$NegFraction[which(df$Prop <= i)] <- i}
   for (i in rev(pos_h)) {df$PosFraction[which(df$Prop >= i)] <- i}
@@ -49,18 +49,19 @@ observeEvent(input$specific_h, {
   df$PosPercent <- df$PosFraction %>% percent()
   df$NegPercent <- df$NegFraction %>% percent()
   df$PosPercent <- factor(df$PosPercent, levels = df$PosPercent[order(df$PosFraction, decreasing = TRUE)] %>% unique())
-  df$NegPercent <- factor(df$NegPercent, levels = df$NegPercent[order(df$NegFraction)] %>% unique())
+  df$NegPercent <- factor(df$NegPercent, levels = df$NegPercent[order(df$NegFraction, decreasing = FALSE)] %>% unique())
   
   df$Percent <- as.character(df$PosPercent)
-  df$Percent[!is.na(df$NegPercent)] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
-  df <- df %>% filter(!is.na(Percent))
+  df$Percent[df$NegPercent != 0] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
+  # df$Percent[!is.na(df$NegPercent)] <- as.character(df$NegPercent[!is.na(df$NegPercent)])
+  df <- df %>% filter(Percent != "0%")
   df$Percent <- factor(df$Percent, levels = df$Percent[order(df$Prop, decreasing = TRUE)] %>% unique())
+  
   plots$bubble_data <- df
 })
 
 output$bubble_plot <- renderPlot({
   req(inp$data, user$results, plots$bubble_data, plots$bubble_title, inp$limiting)
-  
   # sequence going from 0 to left hand side boundary
   neg_h <- seq(0, percLhs()/100, by = stepLhs()) %>% rev()
   pos_h <- seq(percRhs()/100, 1, by = stepRhs()) %>% rev()
@@ -80,25 +81,26 @@ output$bubble_plot <- renderPlot({
   ptitle <- paste0("Positive and negative cluster homogeneity", "\n(red = >= y %, blue = <= y %) ", 
                    "of the cluster has ", tolower(inp$limiting))
   
-  ggplot(mapping = aes(x = Clusters, y = Prop, size = Size)) + 
-    xlab("Cluster names") + ylab("Percent of cluster") + ggtitle(ptitle) + 
-    (geom_point(data = df_pos, aes(c1 = PosPercent)) %>% 
-       rename_geom_aes(new_aes = c("colour" = "c1"))) + 
-    scale_manual("c1", plots$pos_color(p1), "Positive") + 
-    (geom_point(data = df_neg, aes(c2 = NegPercent)) %>% 
-       rename_geom_aes(new_aes = c("colour" = "c2"))) + 
-    scale_manual("c2", plots$neg_color(n1), "Negative") + 
-    scale_y_continuous(limits = c(0,1)) + 
-    scale_size_continuous(range = c(2,7)) + 
-    theme(strip.text.y = element_text(margin = margin(0,2,0,2)), 
-          strip.text = element_text(size = 14), axis.text.y = element_text(size = 13), 
-          axis.text.x = element_blank(), title = element_text(size = 14), 
-          axis.ticks.x = element_blank(), legend.text = element_text(size = 12))
+  suppressWarnings(
+    ggplot(mapping = aes(x = Clusters, y = Prop, size = Size)) + 
+      xlab("Cluster names") + ylab("Percent of cluster") + ggtitle(ptitle) + 
+      (geom_point(data = df_pos, aes(c1 = PosPercent)) %>% 
+         rename_geom_aes(new_aes = c("colour" = "c1"))) + 
+      scale_manual("c1", plots$pos_color(p1), "Positive") + 
+      (geom_point(data = df_neg, aes(c2 = NegPercent)) %>% 
+         rename_geom_aes(new_aes = c("colour" = "c2"))) + 
+      scale_manual("c2", plots$neg_color(n1), "Negative") + 
+      scale_y_continuous(limits = c(0,1)) + 
+      scale_size_continuous(range = c(2,7)) + 
+      theme(strip.text.y = element_text(margin = margin(0,2,0,2)), 
+            strip.text = element_text(size = 14), axis.text.y = element_text(size = 13), 
+            axis.text.x = element_blank(), title = element_text(size = 14), 
+            axis.ticks.x = element_blank(), legend.text = element_text(size = 12))
+  )
 })
 
 observe({
   req(inp$data, user$results, plots$bubble_data)
-  
   df_pos <- plots$bubble_data %>% filter(!is.na(PosFraction))
   df_neg <- plots$bubble_data %>% filter(!is.na(NegFraction))
   
@@ -126,7 +128,7 @@ observe({
 })
 
 output$no_bubble_data <- renderText({
-  # req(plots$pos_data, plots$neg_data)
+  req(plots$pos_data, plots$neg_data)
   paste0(plots$pos_data, "\n", plots$neg_data)
 })
 
