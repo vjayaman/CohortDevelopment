@@ -1,9 +1,6 @@
 
 output$limiting_factor <- renderPlot({
   req(inp$data, user$initial, user$ptype)
-  saveRDS(inp$data, "inp_data.Rds")
-  saveRDS(user$initial, "user_initial.Rds")
-  saveRDS(user$ptype, "user_ptype.Rds")
   dfx <- user$initial
   
   df_heights <- data.frame(
