@@ -1,6 +1,9 @@
 
 output$limiting_factor <- renderPlot({
   req(inp$data, user$initial, user$ptype)
+  saveRDS(inp$data, "inp_data.Rds")
+  saveRDS(user$initial, "user_initial.Rds")
+  saveRDS(user$ptype, "user_ptype.Rds")
   dfx <- user$initial
   
   df_heights <- data.frame(
@@ -9,7 +12,8 @@ output$limiting_factor <- renderPlot({
   df <- left_join(x = dfx, y = df_heights, by = "h")
   df$h <- factor(df$h, levels = unique(df$h))
   
-  df$perc.th <- factor(df$perc.th, levels = df$perc.th %>% unique() %>% sort(decreasing = TRUE))
+  df$perc.th <- factor(df$perc.th, levels = df$perc.th %>% as.character() %>% unique() %>% 
+                         as.numeric() %>% sort(decreasing = TRUE))
   df$th.type[df$th.type == "pos"] <- "Positive"
   df$th.type[df$th.type == "neg"] <- "Negative"
   
